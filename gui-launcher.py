@@ -10,8 +10,6 @@ from func import *
 from parse_chart import *
 from rpe_easings import *
 
-error_and_exit_no_tip("111")
-
 TIP_TEXT_SCALE = 0.5
 
 pygame.init()

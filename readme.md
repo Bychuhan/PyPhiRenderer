@@ -3,7 +3,7 @@
 > 本项目**仅供研究学习目的，请勿用于商业用途**，侵删。
 
 ## 特别感谢
-- 部分代码参考了 [K0nGbawa/PyPhiPlayer](https://github.com/K0nGbawa/PyPhiPlayer/) 和 [qaqFei/phispler](https://github.com/qaqFei/phisplerr/)。
+- 部分代码参考了 [K0nGbawa/Re-PyPhiPlayer](https://github.com/K0nGbawa/Re-PyPhiPlayer/) 和 [qaqFei/phispler](https://github.com/qaqFei/phispler/)。
 
 ## 使用方法
 - 安装 `python` 。

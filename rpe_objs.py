@@ -7,7 +7,6 @@ from core import *
 import math
 import random
 import data
-import pygame
 
 note_time_list = []
 note_hl_time = []

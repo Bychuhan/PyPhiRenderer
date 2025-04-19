@@ -41,7 +41,7 @@
         - [x] judgeLineDisappearEvents
 
 - [ ] RPE
-    - [ ] BPMList
+    - [x] BPMList
     - [ ] META
         - [x] RPEVersion
         - [x] background

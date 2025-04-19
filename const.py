@@ -1,12 +1,6 @@
 import sys, pygame
+from func import *
 pygame.init()
-
-def get_value(name, default):
-    try:
-        index = sys.argv.index(f"--{name}")
-        return sys.argv[index+1]
-    except ValueError:
-        return default
 
 WINDOW_WIDTH = int(get_value("width", "1200"))
 WINDOW_HEIGHT = int(get_value("height", "900"))

@@ -1,4 +1,4 @@
-import pygame, data, sys, subprocess, tqdm, err_hook, math, time, os, win32gui, keyboard
+import pygame, data, sys, subprocess, tqdm, err_hook, math, time, os, win32gui
 from pygame.locals import DOUBLEBUF, OPENGL
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -26,7 +26,6 @@ hwnd = win32gui.FindWindow(None, pygame.display.get_caption()[0])
 
 if "--render" in sys.argv and "--preview" not in sys.argv:
     win32gui.ShowWindow(hwnd, False)
-    #window = pygame.display.set_mode((1600, 900), flags = DOUBLEBUF | OPENGL)
 
 from parse_chart import *
 from core import *
@@ -338,6 +337,9 @@ else:
         now_time += delta
     process.stdin.close()
     process.wait()
-    
+
+    if os.path.exists(".\\sound.mp3"):
+        os.remove(".\\sound.mp3")
+
     pygame.quit()
     exit()

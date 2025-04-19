@@ -77,6 +77,7 @@ def parse_chart(chart_path):
                 rpe_objs.load_textures(lines, path)
                 rpe_objs.load_hitsounds(lines, path)
             if format == "pec":
+                # wtf bro
                 chart = chart.split("\n")
                 lines = []
                 formatVersion = 114514
@@ -99,10 +100,9 @@ def parse_chart(chart_path):
                     if len(lines)-1 < data[1]:
                         for i in range(data[1]+1-len(lines)):
                             lines.append({'cp':[],'cm':[],'cd':[],'cr':[],'ca':[],'cf':[],'cv':[],'n':[]})
-                print(len(lines))
             debug(f"Chart format | {format.upper()}({formatVersion})")
     except UnicodeDecodeError:
-        error_and_exit_no_tip('')
+        error_and_exit_no_tip('你来的真早！二进制谱面支持正在憋憋中，敬请谅解。/大怨种') #我像个傻逼一样之前怎么写到extra里了。
     return lines, formatVersion, offset, num_of_notes, chart, format, BPMList, attachUI, path
 
 def get_info(chart_path):
@@ -135,7 +135,7 @@ def parse_extra(path):
         try:
             extra = json.load(f)
         except json.JSONDecodeError:
-            error_and_exit_no_tip("你来的真早！二进制谱面支持正在憋憋中，敬请谅解。/大怨种")
+            error_and_exit_no_tip("extra不是json")
 
     file_path = os.path.dirname(path)
 
@@ -150,13 +150,13 @@ def parse_extra(path):
                     shaders[i["shader"]] = get(f"{file_path}{i["shader"]}")
                 else:
                     shaders[i["shader"]] = get(f".\\Resources\\shaders\\{i["shader"]}.glsl")
-                info(f"Loaded shader | {i["shader"]}")
+                #info(f"Loaded shader | {i["shader"]}")
 
     videos = {}
     if video:
         for i in video:
             if i["path"] not in shaders:
                 videos[i["path"]] = f"{file_path}/{i["path"]}"
-                info(f"Loaded video | {i["path"]}")
+                #info(f"Loaded video | {i["path"]}")
 
     return shaders, videos

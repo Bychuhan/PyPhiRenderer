@@ -4,7 +4,6 @@ from texture import *
 from pydub import AudioSegment
 from const import *
 from rpe_easings import *
-import numpy as np
 
 def draw_line(x1:float, y1:float, x2:float, y2:float,width:float,color:tuple[float,float,float,float]):
     glColor4f(*color)

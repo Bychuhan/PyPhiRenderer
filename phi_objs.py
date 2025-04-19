@@ -3,7 +3,6 @@ from func import *
 from dxsound import *
 import math
 import random
-import pygame
 import data
 
 note_time_list = []

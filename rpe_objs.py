@@ -349,11 +349,12 @@ class JudgeLine:
     def update_note(self, time):
         for speed in self.n_notes[:]:
             for note in speed[:]:
-                if note.update(time, self.x, self.y, self.r, self.cfp, self.a >= 0, 1, self.is_cover, self.scale_on_notes, RPE_LINE_WIDTH * self.scalex):
+                u = note.update(time, self.x, self.y, self.r, self.cfp, self.a >= 0, 1, self.is_cover, self.scale_on_notes, RPE_LINE_WIDTH * self.scalex)
+                if u:
                     if not note.if_fake:
                         self.hits.append(Hit(note.x, note.y, note.time, note.tint_hit))
                     speed.remove(note)
-                if note.now_fp * note.speed > 2 * WINDOW_HEIGHT:
+                if u == 0:
                     break
 
     def update_hold(self, time, bpm):
@@ -362,12 +363,13 @@ class JudgeLine:
         self.r_cache = None
         for speed in self.note_holds[:]:
             for note in speed[:]:
-                if note.update(time, self.x, self.y, self.r, self.cfp, self.a >= 0, bpm, self.is_cover, self.scale_on_notes, RPE_LINE_WIDTH * self.scalex):
+                u = note.update(time, self.x, self.y, self.r, self.cfp, self.a >= 0, bpm, self.is_cover, self.scale_on_notes, RPE_LINE_WIDTH * self.scalex)
+                if u:
                     speed.remove(note)
                 if note.play_hit:
                     self.hits.append(Hit(note.x, note.y, note.hittime, note.tint_hit))
                     note.play_hit = False
-                if note.now_fp * note.speed > 2 * WINDOW_HEIGHT:
+                if u == 0:
                     break
 
     def update_hit(self, time):
@@ -611,8 +613,10 @@ class Note:
         self.hitsound = data["hitsound"]
         self.hittime = 0
         self.y_offset = self.y_offset * self.speed * self.is_above
+        self.update_break = False
 
     def update(self, time, linex, liney, linerot, cfp, render_note, bpm, iscover, scale_on_notes, scalex):
+        self.update_break = False
         self.now_fp = self.floor_position - cfp
         self.now_end_fp = self.end_fp - cfp
         self.r_fp = self.now_fp * self.speed * self.is_above
@@ -657,13 +661,39 @@ class Note:
             self.endy = self.y + math.sin(math.radians(linerot + 90)) * (self.end_r_fp + self.y_offset)
         self.x += math.cos(math.radians(linerot + 90)) * (self.r_fp + self.y_offset)
         self.y += math.sin(math.radians(linerot + 90)) * (self.r_fp + self.y_offset)
-        if self.r_fp > WINDOW_HEIGHT * 2 or (math.ceil((self.end_r_fp * self.is_above if self.type == 2 else self.r_fp * self.is_above)) < 0 and iscover):
+
+        if self.type == 2:
+            if ((self.x < -WINDOW_WIDTH * 0.123 or self.x > WINDOW_WIDTH * 1.123) or (self.y < -WINDOW_HEIGHT * 0.123 or self.y > WINDOW_HEIGHT * 1.123)) and ((self.endx < -WINDOW_WIDTH * 0.123 or self.endx > WINDOW_WIDTH * 1.123) or (self.endy < -WINDOW_HEIGHT * 0.123 or self.endy > WINDOW_HEIGHT * 1.123)):
+                x1 = self.x-WINDOW_WIDTH/2
+                y1 = self.y-WINDOW_HEIGHT/2
+                x2 = self.endx-WINDOW_WIDTH/2
+                y2 = self.endy-WINDOW_HEIGHT/2
+                if ((-x1<0 and x2<0) or (-x1>0 and x2>0)) or ((-y1<0 and y2<0) or (-y1>0 and y2>0)):
+                    r = False
+                else:
+                    r = True
+            else:
+                r = False
+        else:
+            r = (self.x < -WINDOW_WIDTH * 0.123 or self.x > WINDOW_WIDTH * 1.123) or (self.y < -WINDOW_HEIGHT * 0.123 or self.y > WINDOW_HEIGHT * 1.123)
+
+        if r:
+            x2 = self.x + math.cos(math.radians(linerot + 90)) * self.is_above
+            y2 = self.y + math.sin(math.radians(linerot + 90)) * self.is_above
+            d = math.sqrt((self.x-WINDOW_WIDTH)**2+(self.y-WINDOW_HEIGHT)**2)
+            d2 = math.sqrt((x2-WINDOW_WIDTH)**2+(y2-WINDOW_HEIGHT)**2)
+            if d2 > d:
+                return 0
+            return
+
+        if (math.ceil((self.end_r_fp * self.is_above if self.type == 2 else self.r_fp * self.is_above)) < 0 and iscover):
             return
         if time < self.visible_time:
             return
         if not render_note:
             return
         self.draw(self.x, self.y, self.endx, self.endy, linerot, scale_on_notes, scalex, linex)
+
 
     def get_xclip(self, texture: Texture, x, xmin, xmax, scale):
         s = texture.width * scale / 2

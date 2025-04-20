@@ -3,7 +3,7 @@ from json import load
 
 from pydub import AudioSegment
 
-import const
+from const import *
 
 from log import *
 
@@ -11,18 +11,18 @@ def summon(Chart, audio, output, format):
     if format == "phi":
         NoteClickAudios = (
             None,
-            AudioSegment.from_file("./Resources/sounds/hitsounds/tap.wav"),
-            AudioSegment.from_file("./Resources/sounds/hitsounds/drag.wav"),
-            AudioSegment.from_file("./Resources/sounds/hitsounds/tap.wav"),
-            AudioSegment.from_file("./Resources/sounds/hitsounds/flick.wav"),
+            AudioSegment.from_file(f"{RESOURCE_PATH}/sounds/hitsounds/tap.wav"),
+            AudioSegment.from_file(f"{RESOURCE_PATH}/sounds/hitsounds/drag.wav"),
+            AudioSegment.from_file(f"{RESOURCE_PATH}/sounds/hitsounds/tap.wav"),
+            AudioSegment.from_file(f"{RESOURCE_PATH}/sounds/hitsounds/flick.wav"),
         )
     elif format == "rpe":
         NoteClickAudios = (
             None,
-            AudioSegment.from_file("./Resources/sounds/hitsounds/tap.wav"),
-            AudioSegment.from_file("./Resources/sounds/hitsounds/tap.wav"),
-            AudioSegment.from_file("./Resources/sounds/hitsounds/flick.wav"),
-            AudioSegment.from_file("./Resources/sounds/hitsounds/drag.wav"),
+            AudioSegment.from_file(f"{RESOURCE_PATH}/sounds/hitsounds/tap.wav"),
+            AudioSegment.from_file(f"{RESOURCE_PATH}/sounds/hitsounds/tap.wav"),
+            AudioSegment.from_file(f"{RESOURCE_PATH}/sounds/hitsounds/flick.wav"),
+            AudioSegment.from_file(f"{RESOURCE_PATH}/sounds/hitsounds/drag.wav"),
         )
     ChartAudio:AudioSegment = AudioSegment.from_file(audio)
     ChartAudio_Length = ChartAudio.duration_seconds

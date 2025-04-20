@@ -11,18 +11,21 @@
 - 双击 [`main.py`](main.py) 运行程序。
 
 ## 参数说明
-|参数名|作用|
-|-|-|
-|--chart|指定谱面|
-|--music|指定音乐|
-|--illustration|指定曲绘|
-|--name|曲名|
-|--level|难度|
-|--width|窗口宽度|
-|--height|窗口高度|
-|--fps|渲染视频的帧数|
-|--render|开启渲染|
-|--bitrate|渲染视频的码率|
+|参数名|作用|默认值|
+|-|-|-|
+|--chart|指定谱面|-|
+|--music|指定音乐|-|
+|--illustration|指定曲绘|-|
+|--name|曲名|-|
+|--level|难度|-|
+|--width|窗口宽度|1200|
+|--height|窗口高度|900|
+|--fps|渲染视频的帧数|60|
+|--render|开启渲染|-|
+|--bitrate|渲染视频的码率|15000|
+|--resource|资源路径|".\\Resources"|
+|--preview|渲染预览|-|
+|--output|渲染视频导出位置|"%Y-%m-%d %H-%M-%S name_level.mp4"|
 
 ## 兼容
 - [ ] Phi

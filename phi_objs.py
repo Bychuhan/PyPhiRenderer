@@ -9,28 +9,28 @@ note_time_list = []
 note_hl_time = []
 
 NOTE_SOUNDS = (
-    directSound(".\\Resources\\sounds\\hitsounds\\tap.wav"),
-    directSound(".\\Resources\\sounds\\hitsounds\\drag.wav"),
-    directSound(".\\Resources\\sounds\\hitsounds\\tap.wav"),
-    directSound(".\\Resources\\sounds\\hitsounds\\flick.wav")
+    directSound(f"{RESOURCE_PATH}\\sounds\\hitsounds\\tap.wav"),
+    directSound(f"{RESOURCE_PATH}\\sounds\\hitsounds\\drag.wav"),
+    directSound(f"{RESOURCE_PATH}\\sounds\\hitsounds\\tap.wav"),
+    directSound(f"{RESOURCE_PATH}\\sounds\\hitsounds\\flick.wav")
 )
 
 NOTE_TEXTURES = (
-    Texture.from_path(".\\Resources\\textures\\tap.png"),
-    Texture.from_path(".\\Resources\\textures\\drag.png"),
-    Texture.from_path(".\\Resources\\textures\\hold.png"),
-    Texture.from_path(".\\Resources\\textures\\flick.png"),
-    Texture.from_path(".\\Resources\\textures\\holdhead.png"),
-    Texture.from_path(".\\Resources\\textures\\holdend.png"),
-    Texture.from_path(".\\Resources\\textures\\tapHL.png"),
-    Texture.from_path(".\\Resources\\textures\\dragHL.png"),
-    Texture.from_path(".\\Resources\\textures\\holdHL.png"),
-    Texture.from_path(".\\Resources\\textures\\flickHL.png"),
-    Texture.from_path(".\\Resources\\textures\\holdheadHL.png"),
-    Texture.from_path(".\\Resources\\textures\\holdendHL.png")
+    Texture.from_path(f"{RESOURCE_PATH}\\textures\\tap.png"),
+    Texture.from_path(f"{RESOURCE_PATH}\\textures\\drag.png"),
+    Texture.from_path(f"{RESOURCE_PATH}\\textures\\hold.png"),
+    Texture.from_path(f"{RESOURCE_PATH}\\textures\\flick.png"),
+    Texture.from_path(f"{RESOURCE_PATH}\\textures\\holdhead.png"),
+    Texture.from_path(f"{RESOURCE_PATH}\\textures\\holdend.png"),
+    Texture.from_path(f"{RESOURCE_PATH}\\textures\\tapHL.png"),
+    Texture.from_path(f"{RESOURCE_PATH}\\textures\\dragHL.png"),
+    Texture.from_path(f"{RESOURCE_PATH}\\textures\\holdHL.png"),
+    Texture.from_path(f"{RESOURCE_PATH}\\textures\\flickHL.png"),
+    Texture.from_path(f"{RESOURCE_PATH}\\textures\\holdheadHL.png"),
+    Texture.from_path(f"{RESOURCE_PATH}\\textures\\holdendHL.png")
 )
 
-HIT_TEXTURES = tuple(Texture.from_path(f".\\Resources\\textures\\hits\\{i + 1}.png") for i in range(30))
+HIT_TEXTURES = tuple(Texture.from_path(f"{RESOURCE_PATH}\\textures\\hits\\{i + 1}.png") for i in range(30))
 
 def to_real_time(tick, bpm):
     return 1.875 / bpm * tick

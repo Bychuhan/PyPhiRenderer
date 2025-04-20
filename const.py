@@ -38,3 +38,4 @@ RPE_TEXT_COLOR = [1, 1, 1]
 CAPTION = "PyPhiRenderer"
 LAUNCHER_WIDTH = 1200
 LAUNCHER_HEIGHT = 900
+RESOURCE_PATH = get_value("resource", ".\\Resources")

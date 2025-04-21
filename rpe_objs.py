@@ -183,6 +183,21 @@ def get_floorposition(speedevents, time):
                 _fp += i["fp"]
         return _fp
 
+def is_intersection(midpoint, angle, width, height):
+    x_mid, y_mid = midpoint
+    if angle == 90 or angle == 270:
+        return 0 <= x_mid <= width
+    if angle == 0 or angle == 180:
+        return 0 <= y_mid <= height
+    slope = math.tan(angle)
+    intercept = y_mid - slope * x_mid
+    y_left = slope * 0 + intercept
+    y_right = slope * width + intercept
+    x_bottom = (0 - intercept) / slope
+    x_top = (height - intercept) / slope
+    return (0 <= y_left <= height) or (0 <= y_right <= height) or (0 <= x_bottom <= width) or (0 <= x_top <= width)
+    # 这是kbw写的。关注B站空吧哇热门手法玩家谢谢喵
+
 class JudgeLine:
     def __init__(self, data: dict, bpm_list):
         self.bpm_list = bpm_list
@@ -663,11 +678,11 @@ class Note:
         self.y += math.sin(math.radians(linerot + 90)) * (self.r_fp + self.y_offset)
 
         if self.type == 2:
-            if ((self.x < -WINDOW_WIDTH * 0.123 or self.x > WINDOW_WIDTH * 1.123) or (self.y < -WINDOW_HEIGHT * 0.123 or self.y > WINDOW_HEIGHT * 1.123)) and ((self.endx < -WINDOW_WIDTH * 0.123 or self.endx > WINDOW_WIDTH * 1.123) or (self.endy < -WINDOW_HEIGHT * 0.123 or self.endy > WINDOW_HEIGHT * 1.123)):
-                x1 = self.x-WINDOW_WIDTH/2
-                y1 = self.y-WINDOW_HEIGHT/2
-                x2 = self.endx-WINDOW_WIDTH/2
-                y2 = self.endy-WINDOW_HEIGHT/2
+            x1 = self.x-WINDOW_WIDTH/2
+            y1 = self.y-WINDOW_HEIGHT/2
+            x2 = self.endx-WINDOW_WIDTH/2
+            y2 = self.endy-WINDOW_HEIGHT/2
+            if not (is_intersection((self.x,self.y),math.radians(linerot), WINDOW_WIDTH, WINDOW_HEIGHT) or is_intersection((self.endx,self.endy),math.radians(linerot), WINDOW_WIDTH, WINDOW_HEIGHT)):
                 if ((-x1<0 and x2<0) or (-x1>0 and x2>0)) or ((-y1<0 and y2<0) or (-y1>0 and y2>0)):
                     r = False
                 else:
@@ -675,16 +690,23 @@ class Note:
             else:
                 r = False
         else:
-            r = (self.x < -WINDOW_WIDTH * 0.123 or self.x > WINDOW_WIDTH * 1.123) or (self.y < -WINDOW_HEIGHT * 0.123 or self.y > WINDOW_HEIGHT * 1.123)
+            r = not is_intersection((self.x,self.y),math.radians(linerot), WINDOW_WIDTH, WINDOW_HEIGHT)
 
         if r:
             x2 = self.x + math.cos(math.radians(linerot + 90)) * self.is_above
             y2 = self.y + math.sin(math.radians(linerot + 90)) * self.is_above
-            d = math.sqrt((self.x-WINDOW_WIDTH)**2+(self.y-WINDOW_HEIGHT)**2)
-            d2 = math.sqrt((x2-WINDOW_WIDTH)**2+(y2-WINDOW_HEIGHT)**2)
+            d = math.sqrt((self.x-WINDOW_WIDTH/2)**2+(self.y-WINDOW_HEIGHT/2)**2)
+            d2 = math.sqrt((x2-WINDOW_WIDTH/2)**2+(y2-WINDOW_HEIGHT/2)**2)
             if d2 > d:
                 return 0
-            return
+
+        if self.type == 2:
+            if ((self.x < -WINDOW_WIDTH * 0.123 or self.x > WINDOW_WIDTH * 1.123) or (self.y < -WINDOW_HEIGHT * 0.123 or self.y > WINDOW_HEIGHT * 1.123)) and ((self.endx < -WINDOW_WIDTH * 0.123 or self.endx > WINDOW_WIDTH * 1.123) or (self.endy < -WINDOW_HEIGHT * 0.123 or self.endy > WINDOW_HEIGHT * 1.123)):
+                if not (((-x1<0 and x2<0) or (-x1>0 and x2>0)) or ((-y1<0 and y2<0) or (-y1>0 and y2>0))):
+                    return
+        else:
+            if (self.x < -WINDOW_WIDTH * 0.123 or self.x > WINDOW_WIDTH * 1.123) or (self.y < -WINDOW_HEIGHT * 0.123 or self.y > WINDOW_HEIGHT * 1.123):
+                return
 
         if (math.ceil((self.end_r_fp * self.is_above if self.type == 2 else self.r_fp * self.is_above)) < 0 and iscover):
             return
@@ -692,8 +714,7 @@ class Note:
             return
         if not render_note:
             return
-        self.draw(self.x, self.y, self.endx, self.endy, linerot, scale_on_notes, scalex, linex)
-
+        self.draw(self.x, self.y, self.endx, self.endy, linerot, scale_on_notes, scalex)
 
     def get_xclip(self, texture: Texture, x, xmin, xmax, scale):
         s = texture.width * scale / 2
@@ -710,7 +731,7 @@ class Note:
         else:
             return ((0, 0), (1, 0), (1, 1), (0, 1))
 
-    def draw(self, x, y, endx, endy, rot, scale_on_notes, scalex, lx):
+    def draw(self, x, y, endx, endy, rot, scale_on_notes, scalex):
         if self.alpha > 0:
             scale = self.size
             if scale_on_notes == 1:

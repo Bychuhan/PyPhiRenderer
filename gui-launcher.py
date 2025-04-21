@@ -205,7 +205,8 @@ def start():
     h = INPUTBOARD[1][3].get()
     fps = INPUTBOARD[2][0].get()
     bitrate = INPUTBOARD[2][1].get()
-    cmd=f"python main.py --chart \"{chart_path}\" --music \"{music_path}\" --illustration \"{ill_path}\" --name \"{name}\" --level \"{level}\" --composer \"{composer}\" --charter \"{charter}\" --illustrator \"{illustrator}\"{f" --width {w}" if w.isdigit() else ""}{f" --height {h}" if h.isdigit() else ""}{f" --render{f" --fps {fps}" if fps.isdigit() else ""}{f" --bitrate {bitrate}" if bitrate.isdigit() else ""}" if open_render else ""}"
+    argv = INPUTBOARD[1][7].get()
+    cmd=f"python main.py --chart \"{chart_path}\" --music \"{music_path}\" --illustration \"{ill_path}\" --name \"{name}\" --level \"{level}\" --composer \"{composer}\" --charter \"{charter}\" --illustrator \"{illustrator}\"{f" --width {w}" if w.isdigit() else ""}{f" --height {h}" if h.isdigit() else ""}{f" --render{f" --fps {fps}" if fps.isdigit() else ""}{f" --bitrate {bitrate}" if bitrate.isdigit() else ""}" if open_render else ""} {argv}"
     print(cmd)
     win32gui.ShowWindow(hwnd, False)
     subprocess.run(cmd)
@@ -238,7 +239,7 @@ TEXT = (
         (Text(f"{page} / {max_page}",font), (600, 20), 0.35, (0.5, 0.5), (1, 1, 1), "1"),
         (Text(f"→",font), (1160, 40), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
         (Text(f"←",font), (1095, 40), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
-        (Text("启动",font), (40, 100), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text("启动",font), (40, 35), 0.5, (0, 0.5), (0, 0, 0), "1"),
     ),
     (#1
         (Text("基本设置",font), (LAUNCHER_WIDTH / 2, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
@@ -265,6 +266,8 @@ TEXT = (
         (Text("null",font,1050), (130, 360), 0.5, (0, 0.5), (0, 0, 0), "1"),
         (Text("画师",font), (40, 295), 0.5, (0, 0.5), (1, 1, 1), "1"),
         (Text("null",font,1050), (130, 295), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text("其他参数",font), (40, 100), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("",font,975), (205, 100), 0.5, (0, 0.5), (0, 0, 0), "1"),
     ),
     (#2
         (Text("渲染设置",font), (LAUNCHER_WIDTH / 2, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
@@ -275,13 +278,21 @@ TEXT = (
         (Text("15000",font,1050), (130, 620), 0.5, (0, 0.5), (0, 0, 0), "1"),
         (Text("",font), (64.5, 750), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
     ),
+    (#3
+        (Text("UI设置",font), (LAUNCHER_WIDTH / 2, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
+        (Text("空空如也",font), (LAUNCHER_WIDTH / 2, 780), 0.4, (0.5, 0.5), (1, 1, 1), "1"),
+    ),
+    (#4
+        (Text("其他设置",font), (LAUNCHER_WIDTH / 2, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
+        (Text("空空如也",font), (LAUNCHER_WIDTH / 2, 780), 0.4, (0.5, 0.5), (1, 1, 1), "1"),
+    ),
 )
 
 BUTTON = (
     (#0
         Button(1160,40,50,50,next_page,(0.5,0.5)),
         Button(1095,40,50,50,previous_page,(0.5,0.5)),
-        Button(80,100,80,50,start,(0.5,0.5)),
+        Button(80,35,80,50,start,(0.5,0.5)),
     ),
     (#1
         Button(250,750,240,50,import_chart,(0.5,0.5)),
@@ -290,6 +301,12 @@ BUTTON = (
     ),
     (#2
         Button(64.5,750,45,45,switch_render,(0.5,0.5)),
+    ),
+    (#3
+        
+    ),
+    (#4
+        
     ),
 )
 
@@ -305,10 +322,17 @@ INPUTBOARD = (
         InputBoard(125,425,240,50,(0,0.5),1,19,1050,240),
         InputBoard(125,360,240,50,(0,0.5),1,21,1050,240),
         InputBoard(125,295,240,50,(0,0.5),1,23,1050,240),
+        InputBoard(200,100,240,50,(0,0.5),1,25,975,240),
     ),
     (#2
         InputBoard(125,685,240,50,(0,0.5),2,3,1050,240),
         InputBoard(125,620,240,50,(0,0.5),2,5,1050,240),
+    ),
+    (#3
+        
+    ),
+    (#4
+        
     ),
 )
 

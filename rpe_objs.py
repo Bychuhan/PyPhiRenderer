@@ -338,54 +338,71 @@ class JudgeLine:
             else:
                 i["isHL"] = False
 
+    def note_s_sy(self, notes):
+        s = {}
+        for i in notes:
+            if not i.speed in s:
+                s[i.speed] = []
+            s[i.speed].append(i)
+        s = [s[k] for k in s]
+        _y = []
+        for n in s:
+            y = {}
+            for i in n:
+                if not i.y_offset in y:
+                    y[i.y_offset] = []
+                y[i.y_offset].append(i)
+            y = list(y[k] for k in y)
+            _y.append(y.copy())
+        return _y
+        # 史。
+
+    def note_sort(self, notes):
+        n = []
+        n.append(self.note_s_sy([i for i in notes if i.is_above == 1]))
+        n.append(self.note_s_sy([i for i in notes if i.is_above == -1]))
+
+        print(n)
+        return n
+
     def load_note(self):
         for i in self.notes:
             i["hitsound"] = (NOTE_HITSOUNDS[i["hitsound"]] if "hitsound" in i else NOTE_SOUNDS[i["type"]-1])
         self.n_notes = [Note(data) for data in self.notes if data["type"] != 2]
         self.note_holds = [Note(data) for data in self.notes if data["type"] == 2]
-        s = {}
-        for i in self.n_notes:
-            if i.speed not in s:
-                s[i.speed] = []
-            s[i.speed].append(i)
-        self.n_notes = [s[k] for k in s]
-        for i in self.n_notes:
-            i.sort(key=lambda x: x.time)
-        s = {}
-        for i in self.note_holds:
-            if i.speed not in s:
-                s[i.speed] = []
-            s[i.speed].append(i)
-        self.note_holds = [s[k] for k in s]
-        for i in self.note_holds:
-            i.sort(key=lambda x: x.time)
+        self.n_notes = self.note_sort(self.n_notes)
+        self.note_holds = self.note_sort(self.note_holds)
         self.inote = len(self.n_notes) > 0 or len(self.note_holds) > 0
 
     def update_note(self, time):
-        for speed in self.n_notes[:]:
-            for note in speed[:]:
-                u = note.update(time, self.x, self.y, self.r, self.cfp, self.a >= 0, 1, self.is_cover, self.scale_on_notes, RPE_LINE_WIDTH * self.scalex)
-                if u:
-                    if not note.if_fake:
-                        self.hits.append(Hit(note.x, note.y, note.time, note.tint_hit))
-                    speed.remove(note)
-                if u == 0:
-                    break
+        for a in self.n_notes[:]:
+            for speed in a[:]:
+                for y in speed[:]:
+                    for note in y[:]:
+                        u = note.update(time, self.x, self.y, self.r, self.cfp, self.a >= 0, 1, self.is_cover, self.scale_on_notes, RPE_LINE_WIDTH * self.scalex)
+                        if u:
+                            if not note.if_fake:
+                                self.hits.append(Hit(note.x, note.y, note.time, note.tint_hit))
+                            y.remove(note)
+                        if u == 0:
+                            break
 
     def update_hold(self, time, bpm):
         self.x_cache = None
         self.y_cache = None
         self.r_cache = None
-        for speed in self.note_holds[:]:
-            for note in speed[:]:
-                u = note.update(time, self.x, self.y, self.r, self.cfp, self.a >= 0, bpm, self.is_cover, self.scale_on_notes, RPE_LINE_WIDTH * self.scalex)
-                if u:
-                    speed.remove(note)
-                if note.play_hit:
-                    self.hits.append(Hit(note.x, note.y, note.hittime, note.tint_hit))
-                    note.play_hit = False
-                if u == 0:
-                    break
+        for a in self.note_holds[:]:
+            for speed in a[:]:
+                for y in speed[:]:
+                    for note in y[:]:
+                        u = note.update(time, self.x, self.y, self.r, self.cfp, self.a >= 0, bpm, self.is_cover, self.scale_on_notes, RPE_LINE_WIDTH * self.scalex)
+                        if u:
+                            y.remove(note)
+                        if note.play_hit:
+                            self.hits.append(Hit(note.x, note.y, note.hittime, note.tint_hit))
+                            note.play_hit = False
+                        if u == 0:
+                            break
 
     def update_hit(self, time):
         for hit in self.hits[:]:
@@ -708,7 +725,7 @@ class Note:
             if (self.x < -WINDOW_WIDTH * 0.123 or self.x > WINDOW_WIDTH * 1.123) or (self.y < -WINDOW_HEIGHT * 0.123 or self.y > WINDOW_HEIGHT * 1.123):
                 return
 
-        if (math.ceil((self.end_r_fp * self.is_above if self.type == 2 else self.r_fp * self.is_above)) < 0 and iscover):
+        if (math.ceil((self.end_r_fp * self.is_above + self.y_offset if self.type == 2 else self.r_fp * self.is_above + self.y_offset)) < 0 and iscover):
             return
         if time < self.visible_time:
             return

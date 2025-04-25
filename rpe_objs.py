@@ -284,7 +284,7 @@ class JudgeLine:
                 else:
                     self.color = [1, 1, 1]
         self.default_color = self.color
-        self.is_cover = data["isCover"]
+        self.is_cover = (True if data["isCover"] == 1 else False)
         self.scale_on_notes = (data["scaleOnNotes"] if "scaleOnNotes" in data else 0)
         self.preload()
 
@@ -361,8 +361,6 @@ class JudgeLine:
         n = []
         n.append(self.note_s_sy([i for i in notes if i.is_above == 1]))
         n.append(self.note_s_sy([i for i in notes if i.is_above == -1]))
-
-        print(n)
         return n
 
     def load_note(self):
@@ -699,13 +697,13 @@ class Note:
             y1 = self.y-WINDOW_HEIGHT/2
             x2 = self.endx-WINDOW_WIDTH/2
             y2 = self.endy-WINDOW_HEIGHT/2
-            if not (is_intersection((self.x,self.y),math.radians(linerot), WINDOW_WIDTH, WINDOW_HEIGHT) or is_intersection((self.endx,self.endy),math.radians(linerot), WINDOW_WIDTH, WINDOW_HEIGHT)):
+            if (is_intersection((self.x,self.y),math.radians(linerot), WINDOW_WIDTH, WINDOW_HEIGHT) or is_intersection((self.endx,self.endy),math.radians(linerot), WINDOW_WIDTH, WINDOW_HEIGHT)):
+                r = False
+            else:
                 if ((-x1<0 and x2<0) or (-x1>0 and x2>0)) or ((-y1<0 and y2<0) or (-y1>0 and y2>0)):
                     r = False
                 else:
                     r = True
-            else:
-                r = False
         else:
             r = not is_intersection((self.x,self.y),math.radians(linerot), WINDOW_WIDTH, WINDOW_HEIGHT)
 
@@ -717,11 +715,7 @@ class Note:
             if d2 > d:
                 return 0
 
-        if self.type == 2:
-            if ((self.x < -WINDOW_WIDTH * 0.123 or self.x > WINDOW_WIDTH * 1.123) or (self.y < -WINDOW_HEIGHT * 0.123 or self.y > WINDOW_HEIGHT * 1.123)) and ((self.endx < -WINDOW_WIDTH * 0.123 or self.endx > WINDOW_WIDTH * 1.123) or (self.endy < -WINDOW_HEIGHT * 0.123 or self.endy > WINDOW_HEIGHT * 1.123)):
-                if not (((-x1<0 and x2<0) or (-x1>0 and x2>0)) or ((-y1<0 and y2<0) or (-y1>0 and y2>0))):
-                    return
-        else:
+        if self.type != 2:
             if (self.x < -WINDOW_WIDTH * 0.123 or self.x > WINDOW_WIDTH * 1.123) or (self.y < -WINDOW_HEIGHT * 0.123 or self.y > WINDOW_HEIGHT * 1.123):
                 return
 

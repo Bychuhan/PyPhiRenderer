@@ -2,8 +2,12 @@ import sys, pygame
 from func import *
 pygame.init()
 
-WINDOW_WIDTH = int(get_value("width", "1200"))
-WINDOW_HEIGHT = int(get_value("height", "900"))
+REAL_WIDTH = int(get_value("width", "1200"))
+REAL_HEIGHT = int(get_value("height", "900"))
+W_LIMIT = (REAL_WIDTH/REAL_HEIGHT) > (16/9)
+WINDOW_WIDTH = (REAL_HEIGHT*(16/9) if W_LIMIT else REAL_WIDTH)
+WINDOW_HEIGHT = REAL_HEIGHT
+X_OFFSET = ((REAL_WIDTH-WINDOW_WIDTH)/2 if W_LIMIT else 0)
 LINE_WIDTH = 5.76 * WINDOW_HEIGHT
 LINE_HEIGHT = 0.0075 * WINDOW_HEIGHT
 X = WINDOW_WIDTH * 0.05625

@@ -199,7 +199,7 @@ class JudgeLine:
 
     def draw(self):
         if self.a > 0:
-            draw_rect(self.x, self.y, LINE_WIDTH, LINE_HEIGHT, self.r, self.a, (0.5,0.5), LINE_COLOR)
+            draw_rect(self.x, self.y, LINE_WIDTH, LINE_HEIGHT, self.r, self.a, (0.5,0.5), LINE_COLOR, xoffset=X_OFFSET)
 
 class Note:
     def __init__(self, data: dict):
@@ -277,12 +277,12 @@ class Note:
 
     def draw(self, x, y, endx, endy, rot):
         if self.type == 3:
-            draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, self.scale, self.yscale * self.length * self.is_above, rot, 1, (0.5,0), (1,1,1))
+            draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, self.scale, self.yscale * self.length * self.is_above, rot, 1, (0.5,0), (1,1,1), xoffset=X_OFFSET)
             if not self.click:
-                draw_texture(NOTE_TEXTURES[4 + self.is_hl * 6], x, y, self.scale, self.scale * self.is_above, rot, 1, (0.5,1), (1,1,1))
-            draw_texture(NOTE_TEXTURES[5 + self.is_hl * 6], endx, endy, NOTE_SCALE, NOTE_SCALE * self.is_above, rot, 1, (0.5,0), (1,1,1))
+                draw_texture(NOTE_TEXTURES[4 + self.is_hl * 6], x, y, self.scale, self.scale * self.is_above, rot, 1, (0.5,1), (1,1,1), xoffset=X_OFFSET)
+            draw_texture(NOTE_TEXTURES[5 + self.is_hl * 6], endx, endy, NOTE_SCALE, NOTE_SCALE * self.is_above, rot, 1, (0.5,0), (1,1,1), xoffset=X_OFFSET)
         else:
-            draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, NOTE_SCALE, NOTE_SCALE, rot, 1, (0.5,0.5), (1,1,1))
+            draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, NOTE_SCALE, NOTE_SCALE, rot, 1, (0.5,0.5), (1,1,1), xoffset=X_OFFSET)
 
 class Hit:
     def __init__(self, x, y, startTime):
@@ -305,7 +305,7 @@ class Hit:
 
     def draw(self):
         if self.p <= 1:
-            draw_texture(HIT_TEXTURES[self.hit_i], self.x, self.y, HIT_SCALE, HIT_SCALE, 0, 1, [0.5, 0.5], HIT_COLOR)
+            draw_texture(HIT_TEXTURES[self.hit_i], self.x, self.y, HIT_SCALE, HIT_SCALE, 0, 1, [0.5, 0.5], HIT_COLOR, xoffset=X_OFFSET)
         n = 0
         for r, d in zip(self.rot, self.distance):
             p = self.p - n * 0.03
@@ -314,5 +314,5 @@ class Hit:
                 py = self.y + math.sin(r) * d * particle_easing(p)
                 a = 1 - p
                 size = PARTICLE_SIZE * (((0.2078 * p - 1.6524) * p + 1.6399) * p + 0.4988)
-                draw_rect(px, py, size, size, 0, a, [0.5, 0.5], PARTICLE_COLOR)
+                draw_rect(px, py, size, size, 0, a, [0.5, 0.5], PARTICLE_COLOR, xoffset=X_OFFSET)
             n += 1

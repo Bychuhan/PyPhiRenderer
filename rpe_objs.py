@@ -315,6 +315,7 @@ class JudgeLine:
             i["positionX"] = i["positionX"] / 1350 * WINDOW_WIDTH
             i["visibleTime"] = i["startTime"] - i["visibleTime"]
             i["yOffset"] = i["yOffset"] / 900 * WINDOW_HEIGHT
+            i["isFake"] = (True if i["isFake"] == 1 else False)
             if "tint" in i:
                 i["tint"] = [(i / 255) for i in i["tint"]]
             else:
@@ -365,6 +366,7 @@ class JudgeLine:
 
     def load_note(self):
         for i in self.notes:
+            i["hitsound_path"] = (i["hitsound"] if "hitsound" in i else None)
             i["hitsound"] = (NOTE_HITSOUNDS[i["hitsound"]] if "hitsound" in i else NOTE_SOUNDS[i["type"]-1])
         self.n_notes = [Note(data) for data in self.notes if data["type"] != 2]
         self.note_holds = [Note(data) for data in self.notes if data["type"] == 2]
@@ -379,7 +381,7 @@ class JudgeLine:
                     for note in y[:]:
                         u = note.update(time, self.x, self.y, self.r, self.cfp, self.a >= 0, 1, self.is_cover, self.scale_on_notes, RPE_LINE_WIDTH * self.scalex)
                         if u:
-                            if not note.if_fake:
+                            if not note.is_fake:
                                 self.hits.append(Hit(note.x, note.y, note.time, note.tint_hit))
                             y.remove(note)
                         if u == 0:
@@ -593,16 +595,16 @@ class JudgeLine:
                         dy = self.pen_pos[i + 1]["y"]
                         d = math.sqrt((px-dx)**2+(py-dy)**2)
                         r = math.degrees(math.atan2(dy-py, dx-px))
-                        draw_rect(px, py, d, self.pen_pos[i]["size"], r, self.pen_pos[i]["a"], (0,0.5), self.pen_pos[i]["color"])
+                        draw_rect(px, py, d, self.pen_pos[i]["size"], r, self.pen_pos[i]["a"], (0,0.5), self.pen_pos[i]["color"], xoffset=X_OFFSET)
         elif self.istexture:
             if self.a > 0:
-                draw_texture(LINE_TEXTURES[self.texture], self.x, self.y, LINE_TEXTURE_SCALE * self.scalex, LINE_TEXTURE_SCALE * self.scaley, self.r, self.a, self.anchor, self.color)
+                draw_texture(LINE_TEXTURES[self.texture], self.x, self.y, LINE_TEXTURE_SCALE * self.scalex, LINE_TEXTURE_SCALE * self.scaley, self.r, self.a, self.anchor, self.color, xoffset=X_OFFSET)
         elif not self.text is None:
             if self.a > 0:
                 self.text.render(self.x, self.y, TEXT_SCALE * self.scalex, TEXT_SCALE * self.scaley, self.r, self.a, self.anchor, self.color)
         elif self.attach_ui == -1:
             if self.a > 0:
-                draw_rect(self.x, self.y, RPE_LINE_WIDTH * self.scalex, RPE_LINE_HEIGHT * self.scaley, self.r, self.a, self.anchor, self.color)
+                draw_rect(self.x, self.y, RPE_LINE_WIDTH * self.scalex, RPE_LINE_HEIGHT * self.scaley, self.r, self.a, self.anchor, self.color, xoffset=X_OFFSET)
 
 class Note:
     def __init__(self, data: dict):
@@ -633,7 +635,7 @@ class Note:
             if self.type == 2:
                 self.scale = HOLD_HL_SCALE
         self.alpha = data["alpha"]
-        self.if_fake = data["isFake"]
+        self.is_fake = data["isFake"]
         self.size = data["size"]
         self.visible_time = data["visibleTime"]
         self.y_offset = data["yOffset"]
@@ -653,7 +655,7 @@ class Note:
         self.end_r_fp = (self.end_fp - cfp) * self.speed * self.is_above
         if time >= self.time:
             if not self.click:
-                if not self.if_fake:
+                if not self.is_fake:
                     self.timer = self.time + 30 / bpm
                     self.hitsound.play()
                     self.hittime = self.time
@@ -663,7 +665,7 @@ class Note:
                 self.length = (self.end_fp - cfp)
                 self.now_fp = 0
                 self.r_fp = 0
-                if not self.if_fake:
+                if not self.is_fake:
                     if time >= self.timer:
                         self.hittime = self.timer
                         self.play_hit = True
@@ -679,7 +681,7 @@ class Note:
                 if self.y_offset != 0:
                     self.x += math.cos(math.radians(linerot + 90)) * self.y_offset
                     self.y += math.sin(math.radians(linerot + 90)) * self.y_offset
-                if not self.if_fake:
+                if not self.is_fake:
                     if self.judgeed == False:
                         data.judges.perfect += 1
                         data.judges.combo += 1
@@ -753,24 +755,24 @@ class Note:
                 if self.type == 2:
                     clip = self.get_xclip(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], self.x_position, xmin, xmax, self.scale * scale)
                     if not clip is None:
-                        draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, self.scale * scale, self.yscale * self.length * self.speed * self.is_above, rot, self.alpha, (0.5,0), self.tint, clip)
+                        draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, self.scale * scale, self.yscale * self.length * self.speed * self.is_above, rot, self.alpha, (0.5,0), self.tint, clip, xoffset=X_OFFSET)
                     if not self.click:
                         if not clip is None:
-                            draw_texture(NOTE_TEXTURES[4 + self.is_hl * 6], x, y, self.scale * scale, self.scale * self.is_above, rot, self.alpha, (0.5,1), self.tint, clip)
+                            draw_texture(NOTE_TEXTURES[4 + self.is_hl * 6], x, y, self.scale * scale, self.scale * self.is_above, rot, self.alpha, (0.5,1), self.tint, clip, xoffset=X_OFFSET)
                     if not clip is None:
-                        draw_texture(NOTE_TEXTURES[5 + self.is_hl * 6], endx, endy, NOTE_SCALE * scale, NOTE_SCALE * self.is_above, rot, self.alpha, (0.5,0), self.tint, clip)
+                        draw_texture(NOTE_TEXTURES[5 + self.is_hl * 6], endx, endy, NOTE_SCALE * scale, NOTE_SCALE * self.is_above, rot, self.alpha, (0.5,0), self.tint, clip, xoffset=X_OFFSET)
                 else:
                     clip = self.get_xclip(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], self.x_position, xmin, xmax, NOTE_SCALE * scale)
                     if not clip is None:
-                        draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, NOTE_SCALE * scale, NOTE_SCALE, rot, self.alpha, (0.5,0.5), self.tint, clip)
+                        draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, NOTE_SCALE * scale, NOTE_SCALE, rot, self.alpha, (0.5,0.5), self.tint, clip, xoffset=X_OFFSET)
             else:
                 if self.type == 2:
-                    draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, self.scale * scale, self.yscale * self.length * self.speed * self.is_above, rot, self.alpha, (0.5,0), self.tint)
+                    draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, self.scale * scale, self.yscale * self.length * self.speed * self.is_above, rot, self.alpha, (0.5,0), self.tint, xoffset=X_OFFSET)
                     if not self.click:
-                        draw_texture(NOTE_TEXTURES[4 + self.is_hl * 6], x, y, self.scale * scale, self.scale * self.is_above, rot, self.alpha, (0.5,1), self.tint)
-                    draw_texture(NOTE_TEXTURES[5 + self.is_hl * 6], endx, endy, NOTE_SCALE * scale, NOTE_SCALE * self.is_above, rot, self.alpha, (0.5,0), self.tint)
+                        draw_texture(NOTE_TEXTURES[4 + self.is_hl * 6], x, y, self.scale * scale, self.scale * self.is_above, rot, self.alpha, (0.5,1), self.tint, xoffset=X_OFFSET)
+                    draw_texture(NOTE_TEXTURES[5 + self.is_hl * 6], endx, endy, NOTE_SCALE * scale, NOTE_SCALE * self.is_above, rot, self.alpha, (0.5,0), self.tint, xoffset=X_OFFSET)
                 else:
-                    draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, NOTE_SCALE * scale, NOTE_SCALE, rot, self.alpha, (0.5,0.5), self.tint)
+                    draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, NOTE_SCALE * scale, NOTE_SCALE, rot, self.alpha, (0.5,0.5), self.tint, xoffset=X_OFFSET)
 
 class Hit:
     def __init__(self, x, y, startTime, color):
@@ -794,7 +796,7 @@ class Hit:
 
     def draw(self):
         if self.p <= 1:
-            draw_texture(HIT_TEXTURES[self.hit_i], self.x, self.y, HIT_SCALE, HIT_SCALE, 0, 1, [0.5, 0.5], self.color)
+            draw_texture(HIT_TEXTURES[self.hit_i], self.x, self.y, HIT_SCALE, HIT_SCALE, 0, 1, [0.5, 0.5], self.color, xoffset=X_OFFSET)
         n = 0
         for r, d in zip(self.rot, self.distance):
             p = self.p - n * 0.03
@@ -803,5 +805,5 @@ class Hit:
                 py = self.y + math.sin(r) * d * particle_easing(p)
                 a = 1 - p
                 size = PARTICLE_SIZE * (((0.2078 * p - 1.6524) * p + 1.6399) * p + 0.4988)
-                draw_rect(px, py, size, size, 0, a, [0.5, 0.5], self.color)
+                draw_rect(px, py, size, size, 0, a, [0.5, 0.5], self.color, xoffset=X_OFFSET)
             n += 1

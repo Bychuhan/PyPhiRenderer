@@ -14,11 +14,11 @@ from states import *
 from loading import *"""
 
 pygame.init()
-window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), flags = DOUBLEBUF | OPENGL)
+window = pygame.display.set_mode((REAL_WIDTH, REAL_HEIGHT), flags = DOUBLEBUF | OPENGL)
 icon = pygame.image.load(".\\Resources\\icon.png")
 pygame.display.set_caption(CAPTION)
 pygame.display.set_icon(icon)
-gluOrtho2D(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT)
+gluOrtho2D(0, REAL_WIDTH, 0, REAL_HEIGHT)
 glEnable(GL_BLEND)
 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
@@ -77,7 +77,7 @@ try:
     music.load(music_path)
 except:
     error_and_exit_no_tip("傻逼你音乐呢")
-music_length = get_audio_length(music_path)
+music_length = music.get_length()
 info(f"Loaded music | {music_path}")
 
 if "--illustration" in sys.argv:
@@ -90,13 +90,13 @@ try:
     illustration = Image.open(illustration_path)
 except:
     error_and_exit_no_tip("傻逼你曲绘呢")
-if WINDOW_WIDTH / illustration.width > WINDOW_HEIGHT / illustration.height:
-    ill_scale = WINDOW_WIDTH / illustration.width
+if REAL_WIDTH / illustration.width > REAL_HEIGHT / illustration.height:
+    ill_scale = REAL_WIDTH / illustration.width
 else:
-    ill_scale = WINDOW_HEIGHT / illustration.height
+    ill_scale = REAL_HEIGHT / illustration.height
 illustration = illustration.filter(ImageFilter.GaussianBlur(80))
 illustration = illustration.resize((int(illustration.width * ill_scale), int(illustration.height * ill_scale))).convert("RGB")
-illustration = ImageEnhance.Brightness(illustration).enhance(0.4)
+rill_clip = X_OFFSET/illustration.width
 illustration = Texture.from_image(illustration)
 info(f"Loaded illustration | {illustration_path}")
 
@@ -143,8 +143,8 @@ def draw_ui(time):
             continue
         text[0].render(text[1][0],text[1][1],text[2],text[2],0,1,text[3],(1,1,1), now_time)
     if pause_attach is None:
-        draw_rect(19.83 * HEIGHT_SCALE, 578.1 * HEIGHT_SCALE, 6.2 * HEIGHT_SCALE, 22 * HEIGHT_SCALE, 0, 1, (0,1), (1,1,1))
-        draw_rect(32 * HEIGHT_SCALE, 578.1 * HEIGHT_SCALE, 6.2 * HEIGHT_SCALE, 22 * HEIGHT_SCALE, 0, 1, (0,1), (1,1,1))
+        draw_rect(19.83 * HEIGHT_SCALE, 578.1 * HEIGHT_SCALE, 6.2 * HEIGHT_SCALE, 22 * HEIGHT_SCALE, 0, 1, (0,1), (1,1,1), xoffset=X_OFFSET)
+        draw_rect(32 * HEIGHT_SCALE, 578.1 * HEIGHT_SCALE, 6.2 * HEIGHT_SCALE, 22 * HEIGHT_SCALE, 0, 1, (0,1), (1,1,1), xoffset=X_OFFSET)
     else:
         lx, ly, lr, la, lsx, lsy, lc = pause_attach.get_data(time)
         _xs = 6.2 * HEIGHT_SCALE * lsx
@@ -154,13 +154,13 @@ def draw_ui(time):
         _2xt = (32 - 19.83) * HEIGHT_SCALE
         _2x = _x + math.cos(math.radians(lr)) * (_2xt * lsx)
         _2y = _y + math.sin(math.radians(lr)) * (_2xt * lsx)
-        draw_rect(_x, _y, _xs, _ys, lr, la, (0,1), lc)
-        draw_rect(_2x, _2y,_xs, _ys, lr, la, (0,1), lc)
+        draw_rect(_x, _y, _xs, _ys, lr, la, (0,1), lc, xoffset=X_OFFSET)
+        draw_rect(_2x, _2y,_xs, _ys, lr, la, (0,1), lc, xoffset=X_OFFSET)
     process = (now_time + offset) / music_length
     s = 0 - 6.3 * HEIGHT_SCALE / 2
     if bar_attach is None:
-        draw_rect(s + process * (WINDOW_WIDTH - s), WINDOW_HEIGHT, 2 * HEIGHT_SCALE, 6.3 * HEIGHT_SCALE, 0, 1, (0,1), (1,1,1))
-        draw_rect(s, WINDOW_HEIGHT, process * (WINDOW_WIDTH - s), 6.3 * HEIGHT_SCALE, 0, 1, (0,1), (0.569, 0.569, 0.569))
+        draw_rect(s + process * (WINDOW_WIDTH - s), WINDOW_HEIGHT, 2 * HEIGHT_SCALE, 6.3 * HEIGHT_SCALE, 0, 1, (0,1), (1,1,1), xoffset=X_OFFSET)
+        draw_rect(s, WINDOW_HEIGHT, process * (WINDOW_WIDTH - s), 6.3 * HEIGHT_SCALE, 0, 1, (0,1), (0.569, 0.569, 0.569), xoffset=X_OFFSET)
     else:
         lx, ly, lr, la, lsx, lsy, lc = bar_attach.get_data(time)
         process *= lsx
@@ -273,7 +273,8 @@ if "--render" not in sys.argv:
                     debug(f"FPS | {round(clock.get_fps())}")
                     _t += 1
 
-                draw_texture(illustration, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 1, 1, 0, 1, (0.5,0.5), (1,1,1))
+                draw_texture(illustration, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 1, 1, 0, 1, (0.5,0.5), (1,1,1), xoffset=X_OFFSET)
+                draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,0.6,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
 
                 if format == "phi":
                     phi_update()
@@ -282,6 +283,12 @@ if "--render" not in sys.argv:
 
                 update_ui()
                 draw_ui(now_time)
+
+                if W_LIMIT:
+                    draw_texture(illustration, 0, 0, 1, 1, 0, 1, (0,0), (1,1,1), clip=((0,0),(rill_clip,0),(rill_clip,1),(0,1)))
+                    draw_texture(illustration, REAL_WIDTH, 0, 1, 1, 0, 1, (1,0), (1,1,1), clip=((1-rill_clip,0),(1,0),(1,1),(1-rill_clip,1)))
+                    draw_rect(0,0,X_OFFSET,REAL_HEIGHT,0,0.7,(0,0),(0.1,0.1,0.1))
+                    draw_rect(REAL_WIDTH,0,X_OFFSET,REAL_HEIGHT,0,0.7,(1,0),(0.1,0.1,0.1))
 
                 """if now_time + offset > music_length:
                     lines.clear()
@@ -296,16 +303,16 @@ if "--render" not in sys.argv:
 
         pygame.display.flip()
 else:
-    pygame.display.set_caption(f"{CAPTION} | RENDERING")
     ispreview = "--preview" in sys.argv
+    pygame.display.set_caption("PREVIEW" if ispreview else CAPTION)
     import hitsound
     fps = int(get_value("fps", 60))
     output = get_value("output", f"{time.strftime("%Y-%m-%d %H-%M-%S", time.localtime())} {name}_{level.split(" ")[0] if " Lv." in level or "  Lv." in level else level}.mp4")
     delta = 1 / fps
     bitrate = int(get_value("bitrate", 15000))
-    hitsound.summon(chart, music_path, ".\\sound.mp3", format)
+    hitsound.summon(chart, music_path, ".\\sound.mp3", format, path)
     ffmpeg_command = [
-        "ffmpeg", "-y", "-f", "rawvideo", "-vcodec", "rawvideo", "-s", f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}", "-pix_fmt", "rgb24",
+        "ffmpeg", "-y", "-f", "rawvideo", "-vcodec", "rawvideo", "-s", f"{REAL_WIDTH}x{REAL_HEIGHT}", "-pix_fmt", "rgb24",
         "-r", str(fps), "-i", "-", "-i", ".\\sound.mp3", "-c:v", "libx264", "-b:v", f"{bitrate}k", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "128k", "-strict", "experimental", "-vf", "vflip", output
     ]
@@ -322,7 +329,10 @@ else:
                     exit()
                     break
         glClear(GL_COLOR_BUFFER_BIT)
-        draw_texture(illustration, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 1, 1, 0, 1, (0.5,0.5), (1,1,1))
+
+        draw_texture(illustration, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 1, 1, 0, 1, (0.5,0.5), (1,1,1), xoffset=X_OFFSET)
+        draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,0.6,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
+
         if format == "phi":
             phi_update()
         elif format == "rpe":
@@ -330,9 +340,16 @@ else:
         update_ui()
         draw_ui(now_time)
 
+        if W_LIMIT:
+            draw_texture(illustration, 0, 0, 1, 1, 0, 1, (0,0), (1,1,1), clip=((0,0),(rill_clip,0),(rill_clip,1),(0,1)))
+            draw_texture(illustration, REAL_WIDTH, 0, 1, 1, 0, 1, (1,0), (1,1,1), clip=((1-rill_clip,0),(1,0),(1,1),(1-rill_clip,1)))
+            draw_rect(0,0,X_OFFSET,REAL_HEIGHT,0,0.7,(0,0),(0.1,0.1,0.1))
+            draw_rect(REAL_WIDTH,0,X_OFFSET,REAL_HEIGHT,0,0.7,(1,0),(0.1,0.1,0.1))
+
         if ispreview:
             pygame.display.flip()
-        frame_image = glReadPixels(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE)
+
+        frame_image = glReadPixels(0, 0, REAL_WIDTH, REAL_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE)
         process.stdin.write(frame_image)
         now_time += delta
     process.stdin.close()

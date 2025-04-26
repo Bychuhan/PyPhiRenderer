@@ -1,5 +1,6 @@
 import pygame
 from func import *
+from const import *
 
 class Text:
     def __init__(self, text: str, font: pygame.font.Font, maxwidth = 999999):
@@ -18,10 +19,10 @@ class Text:
             if self.w * sw > self.maxwidth:
                 _size = (self.maxwidth / (self.w * sw))
             if self.attach_line is None:
-                draw_text_texture(self.texture, x, y, sw * _size, sh * _size, r, a, anchor, color)
+                draw_text_texture(self.texture, x, y, sw * _size, sh * _size, r, a, anchor, color, xoffset=X_OFFSET)
             else:
                 lx, ly, lr, la, lsx, lsy, lc = self.attach_line.get_data(time)
-                draw_text_texture(self.texture, x + lx, y + ly, sw * lsx * _size, sh * lsy * _size, r + lr, la, anchor, lc)
+                draw_text_texture(self.texture, x + lx, y + ly, sw * lsx * _size, sh * lsy * _size, r + lr, la, anchor, lc, xoffset=X_OFFSET)
 
     def attach(self, line):
         self.attach_line = line

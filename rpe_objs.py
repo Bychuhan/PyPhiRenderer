@@ -11,7 +11,7 @@ import data
 note_time_list = []
 note_hl_time = []
 
-particle_easing = lambda x: 9 * x / (8 * x + 0.7)
+particle_easing = lambda x: 9 * x / (8 * x + 1)
 
 NOTE_SOUNDS = (
     directSound(f"{RESOURCE_PATH}\\sounds\\hitsounds\\tap.wav"),

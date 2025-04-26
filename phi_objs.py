@@ -67,7 +67,7 @@ def init_speed_event(events, bpm):
         i["value"] = i["value"] * Y
         i["fp"] = i["value"] * (i["endTime"] - i["startTime"])
 
-particle_easing = lambda x: 9 * x / (8 * x + 0.7)
+particle_easing = lambda x: 9 * x / (8 * x + 1)
 
 class JudgeLine:
     def __init__(self, data: dict):

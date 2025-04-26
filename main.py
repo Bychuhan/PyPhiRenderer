@@ -97,6 +97,8 @@ else:
 illustration = illustration.filter(ImageFilter.GaussianBlur(80))
 illustration = illustration.resize((int(illustration.width * ill_scale), int(illustration.height * ill_scale))).convert("RGB")
 rill_clip = X_OFFSET/illustration.width
+rill_xfs = (illustration.width-REAL_WIDTH)/2/illustration.width
+rill_yfs = (illustration.height-REAL_HEIGHT)/2
 illustration = Texture.from_image(illustration)
 info(f"Loaded illustration | {illustration_path}")
 
@@ -285,8 +287,8 @@ if "--render" not in sys.argv:
                 draw_ui(now_time)
 
                 if W_LIMIT:
-                    draw_texture(illustration, 0, 0, 1, 1, 0, 1, (0,0), (1,1,1), clip=((0,0),(rill_clip,0),(rill_clip,1),(0,1)))
-                    draw_texture(illustration, REAL_WIDTH, 0, 1, 1, 0, 1, (1,0), (1,1,1), clip=((1-rill_clip,0),(1,0),(1,1),(1-rill_clip,1)))
+                    draw_texture(illustration, 0, -rill_yfs, 1, 1, 0, 1, (rill_xfs,0), (1,1,1), clip=((rill_xfs,0),(rill_clip+rill_xfs,0),(rill_clip+rill_xfs,1),(rill_xfs,1)))
+                    draw_texture(illustration, REAL_WIDTH, -rill_yfs, 1, 1, 0, 1, (1-rill_xfs,0), (1,1,1), clip=((1-rill_clip-rill_xfs,0),(1-rill_xfs,0),(1-rill_xfs,1),(1-rill_clip-rill_xfs,1)))
                     draw_rect(0,0,X_OFFSET,REAL_HEIGHT,0,0.7,(0,0),(0.1,0.1,0.1))
                     draw_rect(REAL_WIDTH,0,X_OFFSET,REAL_HEIGHT,0,0.7,(1,0),(0.1,0.1,0.1))
 
@@ -341,8 +343,8 @@ else:
         draw_ui(now_time)
 
         if W_LIMIT:
-            draw_texture(illustration, 0, 0, 1, 1, 0, 1, (0,0), (1,1,1), clip=((0,0),(rill_clip,0),(rill_clip,1),(0,1)))
-            draw_texture(illustration, REAL_WIDTH, 0, 1, 1, 0, 1, (1,0), (1,1,1), clip=((1-rill_clip,0),(1,0),(1,1),(1-rill_clip,1)))
+            draw_texture(illustration, 0, -rill_yfs, 1, 1, 0, 1, (rill_xfs,0), (1,1,1), clip=((rill_xfs,0),(rill_clip+rill_xfs,0),(rill_clip+rill_xfs,1),(rill_xfs,1)))
+            draw_texture(illustration, REAL_WIDTH, -rill_yfs, 1, 1, 0, 1, (1-rill_xfs,0), (1,1,1), clip=((1-rill_clip-rill_xfs,0),(1-rill_xfs,0),(1-rill_xfs,1),(1-rill_clip-rill_xfs,1)))
             draw_rect(0,0,X_OFFSET,REAL_HEIGHT,0,0.7,(0,0),(0.1,0.1,0.1))
             draw_rect(REAL_WIDTH,0,X_OFFSET,REAL_HEIGHT,0,0.7,(1,0),(0.1,0.1,0.1))
 

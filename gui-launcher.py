@@ -38,7 +38,7 @@ bg = ImageEnhance.Brightness(bg).enhance(0.4)
 bg = Texture.from_image(bg)
 
 page = 1
-max_page = 2
+max_page = 3
 
 open_render = False
 
@@ -206,7 +206,11 @@ def start():
     fps = INPUTBOARD[2][0].get()
     bitrate = INPUTBOARD[2][1].get()
     argv = INPUTBOARD[1][7].get()
-    cmd=f"python main.py --chart \"{chart_path}\" --music \"{music_path}\" --illustration \"{ill_path}\" --name \"{name}\" --level \"{level}\" --composer \"{composer}\" --charter \"{charter}\" --illustrator \"{illustrator}\"{f" --width {w}" if w.isdigit() else ""}{f" --height {h}" if h.isdigit() else ""}{f" --render{f" --fps {fps}" if fps.isdigit() else ""}{f" --bitrate {bitrate}" if bitrate.isdigit() else ""}" if open_render else ""} {argv}"
+    combo_tips = INPUTBOARD[3][0].get()
+    aspect_ratio = INPUTBOARD[3][1].get()
+    if not (":" in aspect_ratio and len([i for i in aspect_ratio.split(":") if i.isdigit()]) == 2):
+        aspect_ratio = "16:9"
+    cmd=f"python main.py --chart \"{chart_path}\" --music \"{music_path}\" --illustration \"{ill_path}\" --name \"{name}\" --level \"{level}\" --composer \"{composer}\" --charter \"{charter}\" --illustrator \"{illustrator}\" --combotips \"{combo_tips}\" --aspectratio \"{aspect_ratio}\"{f" --width {w}" if w.isdigit() else ""}{f" --height {h}" if h.isdigit() else ""}{f" --render{f" --fps {fps}" if fps.isdigit() else ""}{f" --bitrate {bitrate}" if bitrate.isdigit() else ""}" if open_render else ""} {argv}"
     print(cmd)
     win32gui.ShowWindow(hwnd, False)
     subprocess.run(cmd)
@@ -218,7 +222,7 @@ def next_page():
     if page < max_page:
         page+=1
     else:
-        tips.append(Tip("已经是最后一页",(0.2,1,0.2),(1,1,1),(0.2,1,0.2),2,0.6))
+        tips.append(Tip(LOCALES['launcher']['last-page'],(0.2,1,0.2),(1,1,1),(0.2,1,0.2),2,0.6))
     TEXT[0][0][0].change_text(f"{page} / {max_page}")
 
 def previous_page():
@@ -226,7 +230,7 @@ def previous_page():
     if page > 1:
         page-=1
     else:
-        tips.append(Tip("已经是第一页",(0.2,1,0.2),(1,1,1),(0.2,1,0.2),2,0.6))
+        tips.append(Tip(LOCALES['launcher']['frist-page'],(0.2,1,0.2),(1,1,1),(0.2,1,0.2),2,0.6))
     TEXT[0][0][0].change_text(f"{page} / {max_page}")
 
 def switch_render():
@@ -239,48 +243,51 @@ TEXT = (
         (Text(f"{page} / {max_page}",font), (600, 20), 0.35, (0.5, 0.5), (1, 1, 1), "1"),
         (Text(f"→",font), (1160, 40), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
         (Text(f"←",font), (1095, 40), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
-        (Text("启动",font), (40, 35), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['start'],font), (40, 35), 0.5, (0, 0.5), (0, 0, 0), "1"),
     ),
     (#1
-        (Text("基本设置",font), (LAUNCHER_WIDTH / 2, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
-        (Text("谱面",font), (40, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['title-1'],font), (LAUNCHER_WIDTH / 2, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['chart'],font), (40, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
         (Text("点击选择谱面",font), (250, 750), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
-        (Text("未选择",font,800), (385, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("音乐",font), (40, 685), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['not-select'],font,800), (385, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['music'],font), (40, 685), 0.5, (0, 0.5), (1, 1, 1), "1"),
         (Text("点击选择音乐",font), (250, 685), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
-        (Text("未选择",font,800), (385, 685), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("曲绘",font), (40, 620), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['not-select'],font,800), (385, 685), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['illustration'],font), (40, 620), 0.5, (0, 0.5), (1, 1, 1), "1"),
         (Text("点击选择曲绘",font), (250, 620), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
-        (Text("未选择",font,800), (385, 620), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("曲名",font), (40, 555), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['not-select'],font,800), (385, 620), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['name'],font), (40, 555), 0.5, (0, 0.5), (1, 1, 1), "1"),
         (Text("null",font,1050), (130, 555), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text("难度",font), (40, 490), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['level'],font), (40, 490), 0.5, (0, 0.5), (1, 1, 1), "1"),
         (Text("null",font,1050), (130, 490), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text("窗口宽度",font), (40, 230), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("窗口高度",font), (40, 165), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['window-width'],font), (40, 230), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['window-height'],font), (40, 165), 0.5, (0, 0.5), (1, 1, 1), "1"),
         (Text("1200",font,975), (205, 230), 0.5, (0, 0.5), (0, 0, 0), "1"),
         (Text("900",font,975), (205, 165), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text("曲师",font), (40, 425), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['composer'],font), (40, 425), 0.5, (0, 0.5), (1, 1, 1), "1"),
         (Text("null",font,1050), (130, 425), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text("谱师",font), (40, 360), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['charter'],font), (40, 360), 0.5, (0, 0.5), (1, 1, 1), "1"),
         (Text("null",font,1050), (130, 360), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text("画师",font), (40, 295), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['illustrator'],font), (40, 295), 0.5, (0, 0.5), (1, 1, 1), "1"),
         (Text("null",font,1050), (130, 295), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text("其他参数",font), (40, 100), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['argv'],font), (40, 100), 0.5, (0, 0.5), (1, 1, 1), "1"),
         (Text("",font,975), (205, 100), 0.5, (0, 0.5), (0, 0, 0), "1"),
     ),
     (#2
-        (Text("渲染设置",font), (LAUNCHER_WIDTH / 2, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
-        (Text("启用渲染",font), (100, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("帧数",font), (40, 685), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['title-2'],font), (LAUNCHER_WIDTH / 2, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['render'],font), (100, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['fps'],font), (40, 685), 0.5, (0, 0.5), (1, 1, 1), "1"),
         (Text("60",font,1050), (130, 685), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text("码率",font), (40, 620), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['bitrate'],font), (40, 620), 0.5, (0, 0.5), (1, 1, 1), "1"),
         (Text("15000",font,1050), (130, 620), 0.5, (0, 0.5), (0, 0, 0), "1"),
         (Text("",font), (64.5, 750), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
     ),
     (#3
-        (Text("UI设置",font), (LAUNCHER_WIDTH / 2, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
-        (Text("空空如也",font), (LAUNCHER_WIDTH / 2, 780), 0.4, (0.5, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['title-3'],font), (LAUNCHER_WIDTH / 2, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['combo-tips'],font), (40, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("COMBO",font,920), (260, 750), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['aspect-ratio'],font), (40, 685), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("16:9",font,1012.5), (167.5, 685), 0.5, (0, 0.5), (0, 0, 0), "1"),
     ),
     (#4
         (Text("其他设置",font), (LAUNCHER_WIDTH / 2, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
@@ -329,7 +336,8 @@ INPUTBOARD = (
         InputBoard(125,620,240,50,(0,0.5),2,5,1050,240),
     ),
     (#3
-        
+        InputBoard(255,750,240,50,(0,0.5),3,2,920,240),
+        InputBoard(162.5,685,240,50,(0,0.5),3,4,1012.5,240),
     ),
     (#4
         

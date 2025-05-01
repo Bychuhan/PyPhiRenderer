@@ -8,5 +8,8 @@ class Judge:
     miss: int
     combo: int
     score: float
+    max_combo: int
+    acc: float
+    judge_type: int
 
-judges = Judge(0, 0, 0, 0, 0, 0)
+judges = Judge(0, 0, 0, 0, 0, 0, 0, 1, 2)

@@ -7,6 +7,7 @@ from core import *
 import math
 import random
 import data
+import keyboard
 
 note_time_list = []
 note_hl_time = []
@@ -214,7 +215,7 @@ class JudgeLine:
         self.text_events = []
         self.ispen = False
         self.text = None
-        self.color = RPE_LINE_COLOR
+        self.color = list(LINE_COLOR)
         if "extended" in data:
             if "scaleXEvents" in data["extended"]:
                 self.scalex_events = data["extended"]["scaleXEvents"]
@@ -355,6 +356,9 @@ class JudgeLine:
                 y[i.y_offset].append(i)
             y = list(y[k] for k in y)
             _y.append(y.copy())
+        for speed in _y:
+            for y in speed:
+                y.sort(key = lambda x: x.time)
         return _y
         # 史。
 
@@ -374,20 +378,25 @@ class JudgeLine:
         self.note_holds = self.note_sort(self.note_holds)
         self.inote = len(self.n_notes) > 0 or len(self.note_holds) > 0
 
-    def update_note(self, time):
+    def update_note(self, time, keys):
         for a in self.n_notes[:]:
             for speed in a[:]:
                 for y in speed[:]:
                     for note in y[:]:
-                        u = note.update(time, self.x, self.y, self.r, self.cfp, self.a >= 0, 1, self.is_cover, self.scale_on_notes, RPE_LINE_WIDTH * self.scalex)
+                        u = note.update(time, self.x, self.y, self.r, self.cfp, self.a >= 0, 1, self.is_cover, self.scale_on_notes, RPE_LINE_WIDTH * self.scalex, keys)
                         if u:
                             if not note.is_fake:
-                                self.hits.append(Hit(note.x, note.y, note.time, note.tint_hit))
+                                if AUTOPLAY:   
+                                    self.hits.append(Hit(note.x, note.y, note.hittime, note.tint_hit))
+                                else:
+                                    if note.is_judge:
+                                        if note.judge_type != 'b':
+                                            self.hits.append(Hit(note.x, note.y, time, (note.tint_hit if note.judge_type == 'p' else HIT_COLOR_GOOD)))
                             y.remove(note)
                         if u == 0:
                             break
 
-    def update_hold(self, time, bpm):
+    def update_hold(self, time, bpm, keys):
         self.x_cache = None
         self.y_cache = None
         self.r_cache = None
@@ -395,14 +404,60 @@ class JudgeLine:
             for speed in a[:]:
                 for y in speed[:]:
                     for note in y[:]:
-                        u = note.update(time, self.x, self.y, self.r, self.cfp, self.a >= 0, bpm, self.is_cover, self.scale_on_notes, RPE_LINE_WIDTH * self.scalex)
+                        u = note.update(time, self.x, self.y, self.r, self.cfp, self.a >= 0, bpm, self.is_cover, self.scale_on_notes, RPE_LINE_WIDTH * self.scalex, keys)
+                        if note.play_hit:
+                            if AUTOPLAY:
+                                self.hits.append(Hit(note.x, note.y, note.hittime, note.tint_hit))
+                            else:
+                                self.hits.append(Hit(note.x, note.y, time, (note.tint_hit if note.judge_type == 'p' else HIT_COLOR_GOOD)))
+                            note.play_hit = False
                         if u:
                             y.remove(note)
-                        if note.play_hit:
-                            self.hits.append(Hit(note.x, note.y, note.hittime, note.tint_hit))
-                            note.play_hit = False
                         if u == 0:
                             break
+
+    def note_judge(self, time):
+        n = None
+        t = 9999999
+        rn = None
+        rt = 9999999
+        for a in self.n_notes:
+            for speed in a:
+                for y in speed:
+                    for note in y:
+                        if note.time-time >= 0.18:
+                            break
+                        if note.type == 1:
+                            if not note.is_fake:
+                                if not note.is_judge:
+                                    if note.time-time < t:
+                                        t = note.time-time
+                                        n = note
+        for a in self.note_holds:
+            for speed in a:
+                for y in speed:
+                    for note in y:
+                        if note.time-time >= 0.16:
+                            break
+                        if not note.is_fake:
+                            if not note.is_judge:
+                                if note.time-time < t:
+                                    t = note.time-time
+                                    n = note
+        for a in self.n_notes:
+            for speed in a:
+                for y in speed:
+                    for note in y:
+                        if note.time-time >= 0.08:
+                            break
+                        if note.type == 3 or note.type == 4:
+                            if not note.is_fake:
+                                if not note.judge_dfn:
+                                    if not note.is_judge:
+                                        if note.time-time < rt:
+                                            rt = note.time-time
+                                            rn = note
+        return t, n, rt, rn
 
     def update_hit(self, time):
         for hit in self.hits[:]:
@@ -512,7 +567,6 @@ class JudgeLine:
         if time < event[0]["endTime"]:
             if time >= event[0]["startTime"]:
                 return event[0]["start"]
-                # TODO
             else:
                 return ""
         else:
@@ -560,6 +614,11 @@ class JudgeLine:
             self.scaley = self.event_update(self.scaley_events, time, 1)
         if self.color_events:
             self.color = self.colorevent_update(self.color_events, time, self.default_color)
+        elif not self.istexture and not self.paint_events and self.text is None:
+            if data.judges.judge_type == 1 and self.color != LINE_COLOR_GOOD:
+                self.color = LINE_COLOR_GOOD
+            if data.judges.judge_type == 0 and self.color != (1, 1, 1):
+                self.color = (1, 1, 1)
         if self.paint_events:
             self.pensize = self.event_update(self.paint_events, time, -1)
         if self.text_events:
@@ -643,49 +702,132 @@ class Note:
         self.tint = data["tint"]
         self.tint_hit = data["tintHitEffects"]
         self.hitsound = data["hitsound"]
-        self.hittime = 0
         self.y_offset = self.y_offset * self.speed * self.is_above
         self.update_break = False
+        # Judge ↓
+        self.judge_type = -1
+        self.is_judge = False
+        self.timer = self.time
+        self.is_miss = False
+        self.pre_judge = False
+        self.judge_dfn = False
 
-    def update(self, time, linex, liney, linerot, cfp, render_note, bpm, iscover, scale_on_notes, scalex):
+    def update(self, time, linex, liney, linerot, cfp, render_note, bpm, iscover, scale_on_notes, scalex, keys=[]):
         self.update_break = False
         self.now_fp = self.floor_position - cfp
         self.now_end_fp = self.end_fp - cfp
         self.r_fp = self.now_fp * self.speed * self.is_above
         self.end_r_fp = (self.end_fp - cfp) * self.speed * self.is_above
-        if time >= self.time:
-            if not self.click:
-                if not self.is_fake:
-                    self.timer = self.time + 30 / bpm
-                    self.hitsound.play()
-                    self.hittime = self.time
-                    self.play_hit = True
-                self.click = True
-            if self.type == 2 and time < self.end_time:
-                self.length = (self.end_fp - cfp)
-                self.now_fp = 0
-                self.r_fp = 0
-                if not self.is_fake:
-                    if time >= self.timer:
-                        self.hittime = self.timer
+
+        if AUTOPLAY:
+            if time >= self.time:
+                if not self.click:
+                    if not self.is_fake:
+                        self.timer = self.time + 30 / bpm
+                        self.hitsound.play()
+                        self.hittime = self.time
                         self.play_hit = True
-                        self.timer -= (self.timer - self.time) % (30 / bpm * 0.26)
-                        self.timer += 30 / bpm
-                    if time >= self.judge_time and self.judgeed == False:
-                        self.judgeed = True
-                        data.judges.perfect += 1
-                        data.judges.combo += 1
-            else:
-                self.x = linex + math.cos(math.radians(linerot)) * (self.x_position)
-                self.y = liney + math.sin(math.radians(linerot)) * (self.x_position)
-                if self.y_offset != 0:
-                    self.x += math.cos(math.radians(linerot + 90)) * self.y_offset
-                    self.y += math.sin(math.radians(linerot + 90)) * self.y_offset
+                    self.click = True
+                if self.type == 2 and time < self.end_time:
+                    self.length = (self.end_fp - cfp)
+                    self.now_fp = 0
+                    self.r_fp = 0
+                    if not self.is_fake:
+                        if time >= self.timer:
+                            self.hittime = self.timer
+                            self.play_hit = True
+                            self.timer -= (self.timer - self.time) % (30 / bpm * 0.26)
+                            self.timer += 30 / bpm
+                        if time >= self.judge_time and self.judgeed == False:
+                            self.judgeed = True
+                            data.judges.perfect += 1
+                            data.judges.combo += 1
+                else:
+                    self.x = linex + math.cos(math.radians(linerot)) * (self.x_position)
+                    self.y = liney + math.sin(math.radians(linerot)) * (self.x_position)
+                    if self.y_offset != 0:
+                        self.x += math.cos(math.radians(linerot + 90)) * self.y_offset
+                        self.y += math.sin(math.radians(linerot + 90)) * self.y_offset
+                    if not self.is_fake:
+                        if self.judgeed == False:
+                            data.judges.perfect += 1
+                            data.judges.combo += 1
+                    return True
+        else:
+            if not self.is_fake:
+                if self.type == 3 or self.type == 4:
+                    if keys and abs(time-self.time) <= 0.08 and not self.pre_judge:
+                        self.pre_judge = True
+                    if time >= self.time and self.pre_judge and not self.is_judge:
+                        self.judge(0, time)
+            if time >= self.time:
+                if self.is_fake:
+                    self.click = True
+                    self.is_judge = True
+                if not self.click:
+                    if self.type == 2:
+                        if not self.is_fake:
+                            if self.is_judge:
+                                self.timer = self.time + 30 / bpm
+                                self.play_hit = True
+                        self.click = True
+                if self.type == 2 and time < self.end_time:
+                    self.length = (self.end_fp - cfp)
+                    self.now_fp = 0
+                    self.r_fp = 0
+                    if not self.is_fake:
+                        if self.is_judge and not self.is_miss:
+                            if time >= self.timer:
+                                self.play_hit = True
+                                self.timer -= (self.timer - self.time) % (30 / bpm * 0.26)
+                                self.timer += 30 / bpm
+                            if time >= self.judge_time and not self.judgeed:
+                                self.judgeed = True
+                                data.judges.combo += 1
+                                if self.judge_type == 'p':
+                                    data.judges.perfect += 1
+                                else:
+                                    data.judges.good += 1
+                                    if data.judges.judge_type > 1:
+                                        data.judges.judge_type = 1
+                else:
+                    self.x = linex + math.cos(math.radians(linerot)) * (self.x_position)
+                    self.y = liney + math.sin(math.radians(linerot)) * (self.x_position)
+                    if self.y_offset != 0:
+                        self.x += math.cos(math.radians(linerot + 90)) * self.y_offset
+                        self.y += math.sin(math.radians(linerot + 90)) * self.y_offset
+                    if not self.is_fake:
+                        if self.is_judge and self.type == 2 and not self.is_miss:
+                            if self.judgeed == False:
+                                data.judges.combo += 1
+                                if self.judge_type == 'p':
+                                    data.judges.perfect += 1
+                                else:
+                                    data.judges.good += 1
+                                    if data.judges.judge_type > 1:
+                                        data.judges.judge_type = 1
+                    if self.type == 2:
+                        return True
+            if time > self.time + 0.22 and (not self.is_judge) and not self.is_miss:
                 if not self.is_fake:
-                    if self.judgeed == False:
-                        data.judges.perfect += 1
-                        data.judges.combo += 1
-                return True
+                    self.miss()
+                    if self.type != 2:
+                        return True
+            if self.type != 2:
+                if self.is_judge:
+                    self.x = linex + math.cos(math.radians(linerot)) * (self.x_position)
+                    self.y = liney + math.sin(math.radians(linerot)) * (self.x_position)
+                    if self.y_offset != 0:
+                        self.x += math.cos(math.radians(linerot + 90)) * self.y_offset
+                        self.y += math.sin(math.radians(linerot + 90)) * self.y_offset
+                    if self.judge_type == 'b':
+                        self.miss()
+                    return True
+            if self.type == 2 and self.is_judge and not self.is_miss and not self.judgeed:
+                if not self.is_fake:
+                    if not keys:
+                        self.miss()
+
         self.x = linex + math.cos(math.radians(linerot)) * (self.x_position)
         self.y = liney + math.sin(math.radians(linerot)) * (self.x_position)
         if self.type == 2:
@@ -721,13 +863,13 @@ class Note:
             if (self.x < -WINDOW_WIDTH * 0.123 or self.x > WINDOW_WIDTH * 1.123) or (self.y < -WINDOW_HEIGHT * 0.123 or self.y > WINDOW_HEIGHT * 1.123):
                 return
 
-        if (math.ceil((self.end_r_fp * self.is_above + self.y_offset if self.type == 2 else self.r_fp * self.is_above + self.y_offset)) < 0 and iscover):
+        if (math.ceil((self.end_r_fp * self.is_above + self.y_offset if self.type == 2 else self.r_fp * self.is_above + self.y_offset)) < 0 and iscover and (time <= self.time)):
             return
         if time < self.visible_time:
             return
         if not render_note:
             return
-        self.draw(self.x, self.y, self.endx, self.endy, linerot, scale_on_notes, scalex)
+        self.draw(self.x, self.y, self.endx, self.endy, linerot, scale_on_notes, scalex, time)
 
     def get_xclip(self, texture: Texture, x, xmin, xmax, scale):
         s = texture.width * scale / 2
@@ -744,8 +886,43 @@ class Note:
         else:
             return ((0, 0), (1, 0), (1, 1), (0, 1))
 
-    def draw(self, x, y, endx, endy, rot, scale_on_notes, scalex):
+    def judge(self, time_offset, time):
+        self.click = True
+        if time_offset <= 0.08:
+            self.judge_type = 'p'
+        elif time_offset <= 0.16:
+            self.judge_type = 'g'
+        else:
+            self.judge_type = 'b'
+        self.is_judge = True
+        if self.judge_type != 'b':
+            self.hitsound.play()
+        if self.type != 2:
+            data.judges.combo += 1
+            if self.judge_type == 'p':
+                data.judges.perfect += 1
+            elif self.judge_type == 'g':
+                data.judges.good += 1
+                if data.judges.judge_type > 1:
+                    data.judges.judge_type = 1
+            elif self.judge_type == 'b':
+                data.judges.bad += 1
+                if data.judges.judge_type > 0:
+                    data.judges.judge_type = 0
+        else:
+            if time < self.time-0.08:
+                self.play_hit = True
+
+    def miss(self):
+        data.judges.miss += 1
+        data.judges.combo = 0
+        self.is_miss = True
+        if data.judges.judge_type > 0:
+            data.judges.judge_type = 0
+
+    def draw(self, x, y, endx, endy, rot, scale_on_notes, scalex, time):
         if self.alpha > 0:
+            a = (1 if AUTOPLAY else ((linear(time-self.time, 0, 0.16, 1, 0) if time-self.time > 0 else 1) if time-self.time < 0.16 else 0))
             scale = self.size
             if scale_on_notes == 1:
                 scale *= scalex
@@ -755,24 +932,24 @@ class Note:
                 if self.type == 2:
                     clip = self.get_xclip(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], self.x_position, xmin, xmax, self.scale * scale)
                     if not clip is None:
-                        draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, self.scale * scale, self.yscale * self.length * self.speed * self.is_above, rot, self.alpha, (0.5,0), self.tint, clip, xoffset=X_OFFSET)
-                    if not self.click:
+                        draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, self.scale * scale, self.yscale * self.length * self.speed * self.is_above, rot, self.alpha * (0.5 if self.is_miss else 1), (0.5,0), self.tint, clip, xoffset=X_OFFSET)
+                    if time < self.time:
                         if not clip is None:
                             draw_texture(NOTE_TEXTURES[4 + self.is_hl * 6], x, y, self.scale * scale, self.scale * self.is_above, rot, self.alpha, (0.5,1), self.tint, clip, xoffset=X_OFFSET)
                     if not clip is None:
-                        draw_texture(NOTE_TEXTURES[5 + self.is_hl * 6], endx, endy, NOTE_SCALE * scale, NOTE_SCALE * self.is_above, rot, self.alpha, (0.5,0), self.tint, clip, xoffset=X_OFFSET)
+                        draw_texture(NOTE_TEXTURES[5 + self.is_hl * 6], endx, endy, NOTE_SCALE * scale, NOTE_SCALE * self.is_above, rot, self.alpha * (0.5 if self.is_miss else 1), (0.5,0), self.tint, clip, xoffset=X_OFFSET)
                 else:
                     clip = self.get_xclip(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], self.x_position, xmin, xmax, NOTE_SCALE * scale)
                     if not clip is None:
-                        draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, NOTE_SCALE * scale, NOTE_SCALE, rot, self.alpha, (0.5,0.5), self.tint, clip, xoffset=X_OFFSET)
+                        draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, NOTE_SCALE * scale, NOTE_SCALE, rot, self.alpha * a, (0.5,0.5), self.tint, clip, xoffset=X_OFFSET)
             else:
                 if self.type == 2:
-                    draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, self.scale * scale, self.yscale * self.length * self.speed * self.is_above, rot, self.alpha, (0.5,0), self.tint, xoffset=X_OFFSET)
-                    if not self.click:
+                    draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, self.scale * scale, self.yscale * self.length * self.speed * self.is_above, rot, self.alpha * (0.5 if self.is_miss else 1), (0.5,0), self.tint, xoffset=X_OFFSET)
+                    if time < self.time:
                         draw_texture(NOTE_TEXTURES[4 + self.is_hl * 6], x, y, self.scale * scale, self.scale * self.is_above, rot, self.alpha, (0.5,1), self.tint, xoffset=X_OFFSET)
-                    draw_texture(NOTE_TEXTURES[5 + self.is_hl * 6], endx, endy, NOTE_SCALE * scale, NOTE_SCALE * self.is_above, rot, self.alpha, (0.5,0), self.tint, xoffset=X_OFFSET)
+                    draw_texture(NOTE_TEXTURES[5 + self.is_hl * 6], endx, endy, NOTE_SCALE * scale, NOTE_SCALE * self.is_above, rot, self.alpha * (0.5 if self.is_miss else 1), (0.5,0), self.tint, xoffset=X_OFFSET)
                 else:
-                    draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, NOTE_SCALE * scale, NOTE_SCALE, rot, self.alpha, (0.5,0.5), self.tint, xoffset=X_OFFSET)
+                    draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, NOTE_SCALE * scale, NOTE_SCALE, rot, self.alpha * a, (0.5,0.5), self.tint, xoffset=X_OFFSET)
 
 class Hit:
     def __init__(self, x, y, startTime, color):

@@ -32,10 +32,11 @@ from core import *
 
 UI = (
     (Text(str(data.judges.combo),FONT), (WINDOW_WIDTH / 2, 570.78 * HEIGHT_SCALE), 0.5667 * HEIGHT_SCALE, (0.5, 0.5), "combonumber"),
-    (Text("COMBO",FONT), (WINDOW_WIDTH / 2, 543.25 * HEIGHT_SCALE), 0.1973 * HEIGHT_SCALE, (0.5, 0.5), "combo"),
+    (Text(get_value("combotips", "COMBO"),FONT), (WINDOW_WIDTH / 2, 543.25 * HEIGHT_SCALE), 0.1973 * HEIGHT_SCALE, (0.5, 0.5), "combo"),
     (Text(str(data.judges.score),FONT), (WINDOW_WIDTH - 22.2 * HEIGHT_SCALE, 582.2 * HEIGHT_SCALE), 0.4031 * HEIGHT_SCALE, (1, 1), "score"),
     (Text("",FONT,0.647 * WINDOW_HEIGHT), (23.8 * HEIGHT_SCALE, 18.6 * HEIGHT_SCALE), 0.288 * HEIGHT_SCALE, (0, 0), "name"),
     (Text("",FONT), (WINDOW_WIDTH - 23.8 * HEIGHT_SCALE, 18.6 * HEIGHT_SCALE), 0.288 * HEIGHT_SCALE, (1, 0), "level"),
+    (Text("100.00%",FONT), (WINDOW_WIDTH - 22.2 * HEIGHT_SCALE, 550 * HEIGHT_SCALE), 0.25 * HEIGHT_SCALE, (1, 1), "acc"),
 )
 
 if "--chart" in sys.argv:
@@ -135,9 +136,16 @@ t_text = None
     f.close()"""
 
 def update_ui():
-    data.judges.score = str(round(data.judges.perfect / num_of_notes * 1e6)).zfill(7)
+    if data.judges.combo > data.judges.max_combo:
+        data.judges.max_combo = data.judges.combo
+    s = (data.judges.perfect / num_of_notes + (data.judges.good / num_of_notes * 0.685))
+    data.judges.score = (0.9 * s + data.judges.max_combo / num_of_notes * 0.1) * 1e6
+    a = data.judges.perfect + data.judges.good + data.judges.bad + data.judges.miss
+    data.judges.acc = (1 if a == 0 else ((data.judges.perfect + data.judges.good * 0.65) / a))
     UI[0][0].change_text(str(data.judges.combo))
-    UI[2][0].change_text(str(data.judges.score))
+    UI[2][0].change_text(str(round(data.judges.score)).zfill(7))
+    c = str(round(data.judges.acc*10000)/100)
+    UI[5][0].change_text(f"{c}{"0" if len(c.split(".")[1]) == 1 else ""}%")
 
 def draw_ui(time):
     for text in UI:
@@ -169,8 +177,8 @@ def draw_ui(time):
         _y = WINDOW_HEIGHT - 6.3 * HEIGHT_SCALE / 2 + ly
         _2x = (lx + s) + math.cos(math.radians(lr)) * (process * (WINDOW_WIDTH - s))
         _2y = _y + math.sin(math.radians(lr)) * (process * (WINDOW_WIDTH - s))
-        draw_rect(_2x, _2y, 2 * HEIGHT_SCALE, 6.3 * HEIGHT_SCALE * lsy, lr, la, (0,0.5), lc)
-        draw_rect(lx + s, _y, process * (WINDOW_WIDTH - s), 6.3 * HEIGHT_SCALE * lsy, lr, la, (0,0.5), lc)
+        draw_rect(_2x, _2y, 2 * HEIGHT_SCALE, 6.3 * HEIGHT_SCALE * lsy, lr, la, (0,0.5), lc, xoffset=X_OFFSET)
+        draw_rect(lx + s, _y, process * (WINDOW_WIDTH - s), 6.3 * HEIGHT_SCALE * lsy, lr, la, (0,0.5), lc, xoffset=X_OFFSET)
 
 def phi_update():
     for line in lines:
@@ -200,13 +208,14 @@ def rpe_update():
         line.update(now_time)
         line.draw()
     for line in lines:
-        line.update_hold(now_time, bpm)
+        line.update_hold(now_time, bpm, keys)
     for line in lines:
-        line.update_note(now_time)
+        line.update_note(now_time, keys)
     for line in lines:
         line.update_hit(now_time)
 
 ui_state = States.Playing
+keys = []
 
 if "--render" not in sys.argv:
     pygame.display.set_caption(f"{CAPTION} | PLAYING")
@@ -227,6 +236,39 @@ if "--render" not in sys.argv:
                 pos[1] = WINDOW_HEIGHT - pos[1]
                 print(pos)"""
             if ui_state == States.Playing:
+                if not AUTOPLAY:
+                    if event.type == pygame.KEYDOWN:
+                        keys.append(event.unicode)
+                        if format == 'rpe':
+                            bpm = update_bpm(bpm_list)
+                            now_time = time.time() - start_time - offset
+                            t = 9999999
+                            n = None
+                            rt = 9999999
+                            rn = None
+                            for line in lines:
+                                nt, nn, nrt, nrn = line.note_judge(now_time)
+                                if nt < t and abs(nt) <= 0.18:
+                                    t = nt
+                                    n = nn
+                                if nrt < rt and abs(nrt) <= 0.08:
+                                    rt = nrt
+                                    rn = nrn
+                            #print(rn)
+                            if t != 9999999:
+                                if not (not rn is None and (abs(t)>0.08)):
+                                    debug(f"{t if t < 0 else f"+{t}"} | {'perfect' if abs(t) <= 0.08 else ('good' if abs(t) <= 0.16 else 'bad')}")
+                                    n.judge(t, now_time)
+                                    for line in lines:
+                                        line.update_hold(now_time, bpm, keys)
+                                        line.update_note(now_time, keys)
+                                elif not rn is None:
+                                    rn.judge_dfn = True
+                                    debug(f"defend by {"flick" if rn.type == 3 else "drag"}")
+                            n = None
+                            rn = None
+                    if event.type == pygame.KEYUP:
+                        keys.remove(event.unicode)
                 if event.type == pygame.MOUSEWHEEL:
                     if pause:
                         y_st += event.y * 0.5

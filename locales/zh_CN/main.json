@@ -1,0 +1,14 @@
+{
+    "chart" : "谱面",
+    "music" : "音乐",
+    "illustration" : "曲绘",
+    "name" : "曲名",
+    "level" : "难度",
+    "start-render" : "已开始渲染，按下 Ctrl+C 停止...",
+    "chart-format" : "谱面格式",
+    "loaded-chart" : "已加载谱面",
+    "loaded-music" : "已加载音乐",
+    "loaded-illustration" : "已加载曲绘",
+    "loaded-texture" : "已加载纹理",
+    "loaded-hitsound" : "已加载打击音效"
+}

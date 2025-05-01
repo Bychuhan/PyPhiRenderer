@@ -1,0 +1,27 @@
+{
+    "chart" : "谱面",
+    "music" : "音乐",
+    "illustration" : "曲绘",
+    "name" : "曲名",
+    "level" : "难度",
+    "composer" : "曲师",
+    "charter" : "谱师",
+    "illustrator" : "画师",
+    "window-width" : "窗口宽度",
+    "window-height" : "窗口高度",
+    "argv" : "其他参数",
+    "render" : "启用渲染",
+    "fps" : "帧数",
+    "bitrate" : "码率",
+    "combo-tips" : "COMBO文本",
+    "aspect-ratio" : "宽高比",
+    "not-select" : "未选择",
+    "start" : "启动",
+
+    "title-1" : "基本设置",
+    "title-2" : "渲染设置",
+    "title-3" : "页面3",
+
+    "frist-page" : "已经是第一页",
+    "last-page" : "已经是最后一页"
+}

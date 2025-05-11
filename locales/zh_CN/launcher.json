@@ -15,12 +15,16 @@
     "bitrate" : "码率",
     "combo-tips" : "COMBO文本",
     "aspect-ratio" : "宽高比",
+    "background-alpha" : "背景变暗",
+    "illustration-blur" : "曲绘模糊",
+    "no-autoplay" : "禁用自动播放",
     "not-select" : "未选择",
     "start" : "启动",
 
     "title-1" : "基本设置",
     "title-2" : "渲染设置",
     "title-3" : "页面3",
+    "title-4" : "游玩设置",
 
     "frist-page" : "已经是第一页",
     "last-page" : "已经是最后一页"

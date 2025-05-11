@@ -76,7 +76,7 @@
             - [x] moveXEvents
             - [x] moveYEvents
             - [x] rotateEvents
-            - [ ] speedEvents
+            - [x] speedEvents
         - [ ] extended
             - [ ] inclineEvents
             - [x] colorEvents

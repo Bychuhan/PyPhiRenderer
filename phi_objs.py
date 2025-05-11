@@ -67,7 +67,7 @@ def init_speed_event(events, bpm):
         i["value"] = i["value"] * Y
         i["fp"] = i["value"] * (i["endTime"] - i["startTime"])
 
-particle_easing = lambda x: 9 * x / (8 * x + 1)
+particle_easing = lambda x: 9 * x / (8.3 * x + 1)
 
 class JudgeLine:
     def __init__(self, data: dict):
@@ -305,7 +305,7 @@ class Hit:
 
     def draw(self):
         if self.p <= 1:
-            draw_texture(HIT_TEXTURES[self.hit_i], self.x, self.y, HIT_SCALE, HIT_SCALE, 0, 1, [0.5, 0.5], HIT_COLOR, xoffset=X_OFFSET)
+            draw_texture(HIT_TEXTURES[self.hit_i], self.x, self.y, HIT_SCALE, HIT_SCALE, 0, 1, (0.5, 0.5), HIT_COLOR, xoffset=X_OFFSET)
         n = 0
         for r, d in zip(self.rot, self.distance):
             p = self.p - n * 0.03
@@ -314,5 +314,5 @@ class Hit:
                 py = self.y + math.sin(r) * d * particle_easing(p)
                 a = 1 - p
                 size = PARTICLE_SIZE * (((0.2078 * p - 1.6524) * p + 1.6399) * p + 0.4988)
-                draw_rect(px, py, size, size, 0, a, [0.5, 0.5], PARTICLE_COLOR, xoffset=X_OFFSET)
+                draw_rect(px, py, size, size, 0, a, (0.5, 0.5), PARTICLE_COLOR, xoffset=X_OFFSET)
             n += 1

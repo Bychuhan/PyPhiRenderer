@@ -1,11 +1,12 @@
-import sys, pygame, locale, os
+import sys, pygame, locale, os, win32api, win32con
 from func import *
 from json import loads
 pygame.init()
 
+SCRAEEN_SCALE = pygame.display.get_desktop_sizes()[0][0] / 1920
 ASPECT_RATIO = [int(i) for i in (get_value("aspectratio", "16:9")).split(":")]
-REAL_WIDTH = int(get_value("width", "1200"))
-REAL_HEIGHT = int(get_value("height", "900"))
+REAL_WIDTH = int(get_value("width", 1200 * SCRAEEN_SCALE))
+REAL_HEIGHT = int(get_value("height", 900 * SCRAEEN_SCALE))
 W_LIMIT = (REAL_WIDTH/REAL_HEIGHT) > (ASPECT_RATIO[0]/ASPECT_RATIO[1])
 WINDOW_WIDTH = (REAL_HEIGHT*(ASPECT_RATIO[0]/ASPECT_RATIO[1]) if W_LIMIT else REAL_WIDTH)
 WINDOW_HEIGHT = REAL_HEIGHT
@@ -43,10 +44,10 @@ LINE_TEXTURE_SCALE = WINDOW_WIDTH / 1350
 RPE_TEXTURE_COLOR = [1, 1, 1]
 RPE_TEXT_COLOR = [1, 1, 1]
 CAPTION = "PyPhiRenderer"
-LAUNCHER_WIDTH = 1200
-LAUNCHER_HEIGHT = 900
+LAUNCHER_WIDTH = int(get_value("width", 1200 * SCRAEEN_SCALE))
+LAUNCHER_HEIGHT = int(get_value("height", 900 * SCRAEEN_SCALE))
 RESOURCE_PATH = get_value("resource", ".\\Resources")
-LANGUAGE = ("en_US" if locale.getdefaultlocale()[0] not in os.listdir(".\\locales\\") else locale.getdefaultlocale()[0])
+LANGUAGE = ("zh_CN" if locale.getdefaultlocale()[0] not in os.listdir(".\\locales\\") else locale.getdefaultlocale()[0])
 _locales = {}
 for i in os.listdir(f".\\locales\\{LANGUAGE}\\"):
     _locales[i.split(".")[0]] = loads(get(f".\\locales\\{LANGUAGE}\\{i}"))

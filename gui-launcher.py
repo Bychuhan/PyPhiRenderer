@@ -10,7 +10,10 @@ from func import *
 from parse_chart import *
 from rpe_easings import *
 
-TIP_TEXT_SCALE = 0.5
+_wscale = LAUNCHER_WIDTH / 1200
+_hscale = LAUNCHER_HEIGHT / 900
+
+TIP_TEXT_SCALE = 0.5 * _hscale
 
 pygame.init()
 window = pygame.display.set_mode((LAUNCHER_WIDTH, LAUNCHER_HEIGHT), flags = DOUBLEBUF | OPENGL)
@@ -38,9 +41,10 @@ bg = ImageEnhance.Brightness(bg).enhance(0.4)
 bg = Texture.from_image(bg)
 
 page = 1
-max_page = 3
+max_page = 4
 
 open_render = False
+noautoplay = False
 
 font = pygame.font.Font(".\\Resources\\fonts\\font.ttf", 75)
 
@@ -67,8 +71,8 @@ class Button:
             self.func()
 
     def draw(self):
-        draw_rect(self.x, self.y, self.width+6, self.height+6, 0, 1, self.anchor, (0, 0, 0))
-        draw_rect(self.x, self.y, self.width, self.height, 0, 1, self.anchor, (1, 1, 1))
+        draw_rect(self.x*_hscale, self.y*_hscale, (self.width+6)*_hscale, (self.height+6)*_hscale, 0, 1, self.anchor, (0, 0, 0))
+        draw_rect(self.x*_hscale, self.y*_hscale, (self.width)*_hscale, (self.height)*_hscale, 0, 1, self.anchor, (1, 1, 1))
 
 class InputBoard:
     def __init__(self,x,y,width,height,anchor,text_page,textindex,xmax,xmin):
@@ -105,10 +109,10 @@ class InputBoard:
             if TEXT[self.text_page][self.text_index][0].w * TEXT[self.text_page][self.text_index][2] < self.xmin:
                 self.width = self.xmin
             else:
-                self.width = TEXT[self.text_page][self.text_index][0].w * TEXT[self.text_page][self.text_index][2] + 5
+                self.width = TEXT[self.text_page][self.text_index][0].w * TEXT[self.text_page][self.text_index][2] + 10
 
     def draw(self):
-        draw_rect(self.x+3, self.y, self.width, self.height, 0, 1, self.anchor, (1, 1, 1))
+        draw_rect(self.x*_hscale, self.y*_hscale, self.width*_hscale, self.height*_hscale, 0, 1, self.anchor, (1, 1, 1))
 
     def back(self):
         if self.select:
@@ -140,12 +144,12 @@ class Tip:
         self.timer = 0
         self.start_time = time.time()
         self.width = self.text.w * TIP_TEXT_SCALE + 15
-        self.height = 50
+        self.height = 50 * _hscale
         self.x_offset = self.width + 10
         self.alpha = alpha
 
     def update(self):
-        if 890 - self.id * (self.height + 20) + self.height / 2 < 0:
+        if (890*_hscale) - self.id * (self.height + 20) + self.height / 2 < 0:
             return True
         self.timer = time.time() - self.start_time
         self.x_offset = 0
@@ -161,20 +165,20 @@ class Tip:
         self.render()
 
     def render(self):
-        draw_rect(1190 + self.x_offset, 890 - self.id * (self.height + 20), self.width, self.height, 0, self.alpha, (1, 1), self.color)
-        self.text.render(1190 - 7.5 + self.x_offset, 890 - self.height * (0.5) - self.id * (self.height + 20), TIP_TEXT_SCALE, TIP_TEXT_SCALE, 0, 1, (1, 0.5), self.tcolor)
-        draw_rect(1190 + self.x_offset - self.width, 890 - self.height - self.id * (self.height + 20), self.width * (max(min((self.timer - 1) / self.time, 1), 0)), self.height * 0.15, 0, 1, (0, 0), self.timecolor)
+        draw_rect((LAUNCHER_WIDTH-10) + self.x_offset, (890*_hscale) - self.id * (self.height + 20 * _hscale), self.width, self.height, 0, self.alpha, (1, 1), self.color)
+        self.text.render((LAUNCHER_WIDTH-10) - 7.5 + self.x_offset, (890*_hscale) - self.height * (0.5) - self.id * (self.height + 20 * _hscale), TIP_TEXT_SCALE, TIP_TEXT_SCALE, 0, 1, (1, 0.5), self.tcolor)
+        draw_rect((LAUNCHER_WIDTH-10) + self.x_offset - self.width, (890*_hscale) - self.height - self.id * (self.height + 20 * _hscale), self.width * (max(min((self.timer - 1) / self.time, 1), 0)), self.height * 0.15, 0, 1, (0, 0), self.timecolor)
 
 def import_chart():
     global chart_path
-    chart_path = askopenfilename()
+    chart_path = askopenfilename(title = '请选择谱面文件',filetypes = [('Phiedit Chart File', '.pez .zip .json')])
     TEXT[1][3][0].change_text(chart_path)
     format, n, l, m, i, cp, ce, il = get_info(chart_path)
     if format == "rpe":
         INPUTBOARD[1][0].set(n)
         INPUTBOARD[1][1].set(l)
         INPUTBOARD[1][4].set(cp)
-        INPUTBOARD[1][5].set(ce)
+        INPUTBOARD[1][5].set(ce)                                                                       
         INPUTBOARD[1][6].set(il)
         if not m is None:
             global music_path
@@ -187,12 +191,12 @@ def import_chart():
 
 def import_music():
     global music_path
-    music_path = askopenfilename()
+    music_path = askopenfilename(title = '请选择音乐文件',filetypes = [('Audio', '.mp3 .wav .ogg')])
     TEXT[1][6][0].change_text(music_path)
 
 def import_ill():
     global ill_path
-    ill_path = askopenfilename()
+    ill_path = askopenfilename(title = '请选择曲绘文件',filetypes = [('Image', '.png .jpg .jpeg .gif .webp')])
     TEXT[1][9][0].change_text(ill_path)
 
 def start():
@@ -208,13 +212,21 @@ def start():
     argv = INPUTBOARD[1][7].get()
     combo_tips = INPUTBOARD[3][0].get()
     aspect_ratio = INPUTBOARD[3][1].get()
+    bg_alpha = INPUTBOARD[3][2].get()
+    ill_blur = INPUTBOARD[3][3].get()
     if not (":" in aspect_ratio and len([i for i in aspect_ratio.split(":") if i.isdigit()]) == 2):
         aspect_ratio = "16:9"
-    cmd=f"python main.py --chart \"{chart_path}\" --music \"{music_path}\" --illustration \"{ill_path}\" --name \"{name}\" --level \"{level}\" --composer \"{composer}\" --charter \"{charter}\" --illustrator \"{illustrator}\" --combotips \"{combo_tips}\" --aspectratio \"{aspect_ratio}\"{f" --width {w}" if w.isdigit() else ""}{f" --height {h}" if h.isdigit() else ""}{f" --render{f" --fps {fps}" if fps.isdigit() else ""}{f" --bitrate {bitrate}" if bitrate.isdigit() else ""}" if open_render else ""} {argv}"
-    print(cmd)
-    win32gui.ShowWindow(hwnd, False)
-    subprocess.run(cmd)
-    win32gui.ShowWindow(hwnd, True)
+    if not is_number(bg_alpha):
+        bg_alpha = 0.1
+    m_type = "python main.py" if os.path.exists(".\\main.py") else ("main.exe" if os.path.exists(".\\main.exe") else None)
+    if m_type is None:
+        error("找不到 main.py 或 main.exe")
+    else:
+        cmd=f"{m_type} --chart \"{chart_path}\" --music \"{music_path}\" --illustration \"{ill_path}\" --name \"{name}\" --level \"{level}\" --composer \"{composer}\" --charter \"{charter}\" --illustrator \"{illustrator}\" --combotips \"{combo_tips}\" --aspectratio \"{aspect_ratio}\" --bgalpha {bg_alpha}{' --noautoplay' if noautoplay else ''}{f' --illblur {ill_blur}' if ill_blur.isdigit() else ''}{f" --width {w}" if w.isdigit() else ""}{f" --height {h}" if h.isdigit() else ""}{f" --render{f" --fps {fps}" if fps.isdigit() else ""}{f" --bitrate {bitrate}" if bitrate.isdigit() else ""}" if open_render else ""} {argv}"
+        print(cmd)
+        win32gui.ShowWindow(hwnd, False)
+        subprocess.run(cmd)
+        win32gui.ShowWindow(hwnd, True)
 
 def next_page():
     global page
@@ -238,6 +250,11 @@ def switch_render():
     open_render = not open_render
     TEXT[2][6][0].change_text("√" if open_render else "")
 
+def switch_noautoplay():
+    global noautoplay
+    noautoplay = not noautoplay
+    TEXT[4][2][0].change_text("√" if noautoplay else "")
+
 TEXT = (
     (#0
         (Text(f"{page} / {max_page}",font), (600, 20), 0.35, (0.5, 0.5), (1, 1, 1), "1"),
@@ -246,7 +263,7 @@ TEXT = (
         (Text(LOCALES['launcher']['start'],font), (40, 35), 0.5, (0, 0.5), (0, 0, 0), "1"),
     ),
     (#1
-        (Text(LOCALES['launcher']['title-1'],font), (LAUNCHER_WIDTH / 2, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['title-1'],font), (600, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
         (Text(LOCALES['launcher']['chart'],font), (40, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
         (Text("点击选择谱面",font), (250, 750), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
         (Text(LOCALES['launcher']['not-select'],font,800), (385, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
@@ -274,7 +291,7 @@ TEXT = (
         (Text("",font,975), (205, 100), 0.5, (0, 0.5), (0, 0, 0), "1"),
     ),
     (#2
-        (Text(LOCALES['launcher']['title-2'],font), (LAUNCHER_WIDTH / 2, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['title-2'],font), (600, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
         (Text(LOCALES['launcher']['render'],font), (100, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
         (Text(LOCALES['launcher']['fps'],font), (40, 685), 0.5, (0, 0.5), (1, 1, 1), "1"),
         (Text("60",font,1050), (130, 685), 0.5, (0, 0.5), (0, 0, 0), "1"),
@@ -283,15 +300,20 @@ TEXT = (
         (Text("",font), (64.5, 750), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
     ),
     (#3
-        (Text(LOCALES['launcher']['title-3'],font), (LAUNCHER_WIDTH / 2, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['title-3'],font), (600, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
         (Text(LOCALES['launcher']['combo-tips'],font), (40, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
         (Text("COMBO",font,920), (260, 750), 0.5, (0, 0.5), (0, 0, 0), "1"),
         (Text(LOCALES['launcher']['aspect-ratio'],font), (40, 685), 0.5, (0, 0.5), (1, 1, 1), "1"),
         (Text("16:9",font,1012.5), (167.5, 685), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['background-alpha'],font), (40, 620), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("0.1",font,975), (205, 620), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['illustration-blur'],font), (40, 555), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("80",font,975), (205, 555), 0.5, (0, 0.5), (0, 0, 0), "1"),
     ),
     (#4
-        (Text("其他设置",font), (LAUNCHER_WIDTH / 2, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
-        (Text("空空如也",font), (LAUNCHER_WIDTH / 2, 780), 0.4, (0.5, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['title-4'],font), (600, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['no-autoplay'],font), (100, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("",font), (64.5, 750), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
     ),
 )
 
@@ -313,7 +335,7 @@ BUTTON = (
         
     ),
     (#4
-        
+        Button(64.5,750,45,45,switch_noautoplay,(0.5,0.5)),
     ),
 )
 
@@ -338,9 +360,11 @@ INPUTBOARD = (
     (#3
         InputBoard(255,750,240,50,(0,0.5),3,2,920,240),
         InputBoard(162.5,685,240,50,(0,0.5),3,4,1012.5,240),
+        InputBoard(200,620,240,50,(0,0.5),3,6,1050,240),
+        InputBoard(200,555,240,50,(0,0.5),3,8,1050,240),
     ),
     (#4
-        
+        #请输入文本
     ),
 )
 
@@ -350,7 +374,7 @@ def draw_ui():
     for inputboard in INPUTBOARD[0] + INPUTBOARD[page]:
         inputboard.draw()
     for text in TEXT[0] + TEXT[page]:
-        text[0].render(text[1][0],text[1][1],text[2],text[2],0,1,text[3],text[4])
+        text[0].render(text[1][0]*_hscale,text[1][1]*_hscale,text[2]*_hscale,text[2]*_hscale,0,1,text[3],text[4])
     for i in tips.copy():
         if i.update():
             tips.remove(i)
@@ -364,12 +388,12 @@ while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
-            exit()
+            sys.exit()
         if event.type == pygame.MOUSEBUTTONDOWN:
             for button in BUTTON[0] + BUTTON[page]:
-                button.click(event.pos[0], LAUNCHER_HEIGHT-event.pos[1])
+                button.click(event.pos[0]/_hscale, 900-event.pos[1]/_hscale)
             for inputboard in INPUTBOARD[0] + INPUTBOARD[page]:
-                inputboard.click(event.pos[0], LAUNCHER_HEIGHT-event.pos[1])
+                inputboard.click(event.pos[0]/_hscale, 900-event.pos[1]/_hscale)
         if event.type == pygame.TEXTINPUT:
             for inputboard in INPUTBOARD[0] + INPUTBOARD[page]:
                 inputboard.input(event.text)

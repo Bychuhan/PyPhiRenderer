@@ -7,7 +7,7 @@ from func import *
 from tkinter.filedialog import askopenfilename
 from dxsmixer import *
 from texture import *
-from PIL import Image, ImageFilter, ImageEnhance
+from PIL import Image, ImageFilter
 from log import *
 from states import *
 """from ending import *
@@ -36,7 +36,7 @@ UI = (
     (Text(str(data.judges.score),FONT), (WINDOW_WIDTH - 22.2 * HEIGHT_SCALE, 582.2 * HEIGHT_SCALE), 0.4031 * HEIGHT_SCALE, (1, 1), "score"),
     (Text("",FONT,0.647 * WINDOW_HEIGHT), (23.8 * HEIGHT_SCALE, 18.6 * HEIGHT_SCALE), 0.288 * HEIGHT_SCALE, (0, 0), "name"),
     (Text("",FONT), (WINDOW_WIDTH - 23.8 * HEIGHT_SCALE, 18.6 * HEIGHT_SCALE), 0.288 * HEIGHT_SCALE, (1, 0), "level"),
-    (Text("100.00%",FONT), (WINDOW_WIDTH - 22.2 * HEIGHT_SCALE, 550 * HEIGHT_SCALE), 0.25 * HEIGHT_SCALE, (1, 1), "acc"),
+    #(Text("100.00%",FONT), (WINDOW_WIDTH - 22.2 * HEIGHT_SCALE, 550 * HEIGHT_SCALE), 0.25 * HEIGHT_SCALE, (1, 1), "acc"),
 )
 
 if "--chart" in sys.argv:
@@ -95,8 +95,9 @@ if REAL_WIDTH / illustration.width > REAL_HEIGHT / illustration.height:
     ill_scale = REAL_WIDTH / illustration.width
 else:
     ill_scale = REAL_HEIGHT / illustration.height
-illustration = illustration.filter(ImageFilter.GaussianBlur(80))
-illustration = illustration.resize((int(illustration.width * ill_scale), int(illustration.height * ill_scale))).convert("RGB")
+illustration = illustration.filter(ImageFilter.GaussianBlur(int(get_value('illblur', 80))))
+illustration = illustration.resize((math.ceil(illustration.width * ill_scale), math.ceil(illustration.height * ill_scale)))
+illustration = illustration.convert("RGB")
 rill_clip = X_OFFSET/illustration.width
 rill_xfs = (illustration.width-REAL_WIDTH)/2/illustration.width
 rill_yfs = (illustration.height-REAL_HEIGHT)/2
@@ -128,6 +129,7 @@ composer = get_value("composer", "UK")
 charter = get_value("charter", "UK")
 illustrator = get_value("illustrator", "UK")
 tip = get_tip(".\\Resources\\tips")
+bg_alpha = float(get_value('bgalpha', 0.1))
 
 t_text = None
 
@@ -145,7 +147,7 @@ def update_ui():
     UI[0][0].change_text(str(data.judges.combo))
     UI[2][0].change_text(str(round(data.judges.score)).zfill(7))
     c = str(round(data.judges.acc*10000)/100)
-    UI[5][0].change_text(f"{c}{"0" if len(c.split(".")[1]) == 1 else ""}%")
+    #UI[5][0].change_text(f"{c}{"0" if len(c.split(".")[1]) == 1 else ""}%")
 
 def draw_ui(time):
     for text in UI:
@@ -240,8 +242,8 @@ if "--render" not in sys.argv:
                     if event.type == pygame.KEYDOWN:
                         keys.append(event.unicode)
                         if format == 'rpe':
-                            bpm = update_bpm(bpm_list)
                             now_time = time.time() - start_time - offset
+                            bpm = update_bpm(bpm_list)
                             t = 9999999
                             n = None
                             rt = 9999999
@@ -288,7 +290,7 @@ if "--render" not in sys.argv:
                             music.set_pos(time.time() - start_time)
             if event.type == pygame.QUIT:
                 pygame.quit()
-                exit()
+                sys.exit()
 
         glClear(GL_COLOR_BUFFER_BIT)
 
@@ -318,7 +320,9 @@ if "--render" not in sys.argv:
                     _t += 1
 
                 draw_texture(illustration, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 1, 1, 0, 1, (0.5,0.5), (1,1,1), xoffset=X_OFFSET)
-                draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,0.6,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
+                draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,0.5,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
+                draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,bg_alpha,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
+
 
                 if format == "phi":
                     phi_update()

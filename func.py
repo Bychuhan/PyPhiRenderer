@@ -1,5 +1,7 @@
-import sys, random
+import sys, random, unicodedata
 from OpenGL.GL import *
+from OpenGL.GLU import gluDisk
+from OpenGL.GLU import gluNewQuadric
 from texture import *
 from pydub import AudioSegment
 from rpe_easings import *
@@ -88,6 +90,13 @@ def draw_text_texture(texture: Texture, x, y, sw, sh, r, a, anchor:tuple[float] 
     glDisable(GL_TEXTURE_2D)
     glPopMatrix()
 
+def draw_circle(x, y, r, a, color, xoffset=0):
+    glColor(*color, a)
+    glPushMatrix()
+    glTranslatef(x+xoffset, y, 0)
+    gluDisk(gluNewQuadric(), 0, r, 32, 1)
+    glPopMatrix()
+
 def get_audio_length(path):
     audio = AudioSegment.from_file(path)
     return audio.duration_seconds
@@ -115,3 +124,14 @@ def get_tip(path):
     with open(path, "r", encoding="utf-8") as f:
         f = f.readlines()
         return f[random.randint(0,len(f)-1)]
+
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+def is_chinese(char):
+    n = unicodedata.name(char)
+    return ('CJK' in n or n == "FULLWIDTH COMMA")

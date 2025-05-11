@@ -44,6 +44,7 @@ def parse_chart(chart_path):
                 offset = chart["META"]["offset"] / 1000
                 judgeLineList = chart["judgeLineList"]
                 BPMList = chart["BPMList"]
+                group = chart["judgeLineGroup"]
                 for i in range(len(BPMList)):
                     if i == len(BPMList)-1:
                         BPMList[i]["endTime"] = 9999999999
@@ -54,7 +55,7 @@ def parse_chart(chart_path):
                 for i in BPMList:
                     i["time"] = _t + 60 / i["bpm"] * (i["endTime"] - i["startTime"])
                     _t == i["time"]
-                lines = [rpe_objs.JudgeLine(data, BPMList) for data in judgeLineList]
+                lines = [rpe_objs.JudgeLine(data, BPMList) for data in judgeLineList if group[data['Group']] != '.']
                 for i in lines:
                     if i.father != -1:
                         i.father_line = lines[i.father]
@@ -102,7 +103,7 @@ def parse_chart(chart_path):
                             lines.append({'cp':[],'cm':[],'cd':[],'cr':[],'ca':[],'cf':[],'cv':[],'n':[]})
             debug(f"Chart format | {format.upper()}({formatVersion})")
     except UnicodeDecodeError:
-        error_and_exit_no_tip('你来的真早！二进制谱面支持正在憋憋中，敬请谅解。/大怨种') #我像个傻逼一样之前怎么写到extra里了。
+        error_and_exit_no_tip('你来的真早！二进制谱面支持正在憋憋中，敬请谅解。/大怨种')
     return lines, formatVersion, offset, num_of_notes, chart, format, BPMList, attachUI, path
 
 def get_info(chart_path):

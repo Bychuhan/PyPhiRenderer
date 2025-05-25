@@ -1,4 +1,4 @@
-import pygame, subprocess, win32gui, err_hook, time
+import pygame, subprocess, win32gui, err_hook, time, requests, os
 from pygame.locals import DOUBLEBUF, OPENGL
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -15,6 +15,8 @@ _hscale = LAUNCHER_HEIGHT / 900
 
 TIP_TEXT_SCALE = 0.5 * _hscale
 
+os.environ["SDL_IME_SHOW_UI"] = "1"
+
 pygame.init()
 window = pygame.display.set_mode((LAUNCHER_WIDTH, LAUNCHER_HEIGHT), flags = DOUBLEBUF | OPENGL)
 icon = pygame.image.load(".\\Resources\\icon.png")
@@ -27,6 +29,8 @@ glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 hwnd = win32gui.FindWindow(None, pygame.display.get_caption()[0])
 
 from core import *
+
+python = get_value('python', 'python')
 
 bg_path = ".\\Resources\\launcher_bg.jpg"
 bg = Image.open(bg_path)
@@ -45,14 +49,50 @@ max_page = 4
 
 open_render = False
 noautoplay = False
-
-font = pygame.font.Font(".\\Resources\\fonts\\font.ttf", 75)
+acrylic = False
+show_bar = False
 
 clock = pygame.time.Clock()
 
 chart_path = ""
 music_path = ""
 ill_path = ""
+
+### check update
+try:
+    update = requests.get('https://api.github.com/repos/Bychuhan/PyPhiRenderer/releases/latest', headers={'Accept-Language':'en-US'})
+    update = update.text
+    update = json.loads(update)
+    if f'v{VERSION}' != update['name']:
+        _v_l = VERSION.split('.')
+        _new_v_l = update['name'][1:].split('.')
+        for i in enumerate(_v_l):
+            if i[0] < len(_new_v_l):
+                _v_l[i[0]] = i[1].zfill(len(_new_v_l[i[0]]))
+        for i in enumerate(_new_v_l):
+            if i[0] < len(_v_l):
+                _new_v_l[i[0]] = i[1].zfill(len(_v_l[i[0]]))
+        _v = ''
+        for i in _v_l:
+            _v += i
+        _new_v = ''
+        for i in _new_v_l:
+            _new_v += i
+        if len(_new_v) < len(_v):
+            _new_v += '0' * (len(_v) - len(_new_v))
+        if len(_v) < len(_new_v):
+            _v += '0' * (len(_new_v) - len(_v))
+        _u = 1
+        if _v < _new_v:
+            _u = pygame.display.message_box(LOCALES['update']['check-update'], f'{LOCALES['update']['update-available']}\n\n{LOCALES['update']['new-version']}{update['name']}\n{(LOCALES['update']['no-message'] if update['body'] == '' else update['body'])}', 'info', None, (LOCALES['update']['download'], LOCALES['update']['close']), 0, 1)
+        if _u == 0:
+            _download = update['assets'][0]['browser_download_url']
+            import webbrowser
+            webbrowser.open(_download)
+except requests.exceptions.SSLError:
+    pygame.display.message_box(LOCALES['update']['error'], LOCALES['update']['check-update-failed'], 'error', None, (LOCALES['update']['close'],), 0, 0)
+###
+
 
 class Button:
     def __init__(self,x,y,width,height,func,anchor):
@@ -62,17 +102,22 @@ class Button:
         self.height = height
         self.func = func
         self.anchor = anchor
+        self.disable = False
 
     def update(self):
         self.draw()
 
     def click(self, x, y):
-        if x > self.x-self.width * self.anchor[0] and x < self.x+self.width * (1 - self.anchor[0]) and y<self.y+self.height * (1 - self.anchor[1]) and y > self.y-self.height * self.anchor[1]:
-            self.func()
+        if not self.disable:
+            if x > self.x-self.width * self.anchor[0] and x < self.x+self.width * (1 - self.anchor[0]) and y<self.y+self.height * (1 - self.anchor[1]) and y > self.y-self.height * self.anchor[1]:
+                self.func()
 
     def draw(self):
         draw_rect(self.x*_hscale, self.y*_hscale, (self.width+6)*_hscale, (self.height+6)*_hscale, 0, 1, self.anchor, (0, 0, 0))
-        draw_rect(self.x*_hscale, self.y*_hscale, (self.width)*_hscale, (self.height)*_hscale, 0, 1, self.anchor, (1, 1, 1))
+        draw_rect(self.x*_hscale, self.y*_hscale, (self.width)*_hscale, (self.height)*_hscale, 0, (0.5 if self.disable else 1), self.anchor, (1, 1, 1))
+
+    def set_disable(self, d):
+        self.disable = d
 
 class InputBoard:
     def __init__(self,x,y,width,height,anchor,text_page,textindex,xmax,xmin):
@@ -87,20 +132,37 @@ class InputBoard:
         self.xmax = xmax
         self.xmin = xmin
         self.s = TEXT[self.text_page][self.text_index][2]
+        self.disable = False
+        self._edit = ''
 
     def update(self):
         self.draw()
 
     def click(self, x, y):
-        if x > self.x-self.width * self.anchor[0] and x < self.x+self.width * (1 - self.anchor[0]) and y<self.y+self.height * (1 - self.anchor[1]) and y > self.y-self.height * self.anchor[1]:
+        if (x > self.x-self.width * self.anchor[0] and x < self.x+self.width * (1 - self.anchor[0]) and y<self.y+self.height * (1 - self.anchor[1]) and y > self.y-self.height * self.anchor[1]) and not self.disable:
             self.select = True
+            pygame.key.start_text_input()
+            _rect = pygame.rect.Rect(self.x*_hscale, LAUNCHER_HEIGHT-self.y*_hscale+self.height*_hscale/2, 0, 0)
+            pygame.key.set_text_input_rect(_rect)
         else:
+            if self.select:
+                pygame.key.stop_text_input()
             self.select = False
 
     def input(self, text):
-        if self.select:
-            TEXT[self.text_page][self.text_index][0].change_text(f"{TEXT[self.text_page][self.text_index][0].text}{text}")
-            self.s_width()
+        if not self.disable:
+            if self.select:
+                _l = len(TEXT[self.text_page][self.text_index][0].text) - len(self._edit)
+                TEXT[self.text_page][self.text_index][0].change_text(f"{TEXT[self.text_page][self.text_index][0].text[0:_l]}{text}")
+                self.s_width()
+    
+    def edit(self, text):
+        if not self.disable:
+            if self.select:
+                _l = len(TEXT[self.text_page][self.text_index][0].text) - len(self._edit)
+                TEXT[self.text_page][self.text_index][0].change_text(f"{TEXT[self.text_page][self.text_index][0].text[0:_l]}{text}")
+                self._edit = text
+                self.s_width()
 
     def s_width(self):
         if TEXT[self.text_page][self.text_index][0].w * TEXT[self.text_page][self.text_index][2] > self.xmax:
@@ -112,7 +174,7 @@ class InputBoard:
                 self.width = TEXT[self.text_page][self.text_index][0].w * TEXT[self.text_page][self.text_index][2] + 10
 
     def draw(self):
-        draw_rect(self.x*_hscale, self.y*_hscale, self.width*_hscale, self.height*_hscale, 0, 1, self.anchor, (1, 1, 1))
+        draw_rect(self.x*_hscale, self.y*_hscale, self.width*_hscale, self.height*_hscale, 0, (0.5 if self.disable else 1), self.anchor, (1, 1, 1))
 
     def back(self):
         if self.select:
@@ -125,6 +187,9 @@ class InputBoard:
     def set(self, text):
         TEXT[self.text_page][self.text_index][0].change_text(text)
         self.s_width()
+
+    def set_disable(self, d):
+        self.disable = d
 
 class Tip:
     def get_id(self):
@@ -164,6 +229,10 @@ class Tip:
             self.x_offset = (self.width + 10) * rpe_easings[9]((self.timer - 1 - self.time) / 1)
         self.render()
 
+    def t_rem(self, r_id):
+        if self.id > r_id:
+            self.id -= 1
+
     def render(self):
         draw_rect((LAUNCHER_WIDTH-10) + self.x_offset, (890*_hscale) - self.id * (self.height + 20 * _hscale), self.width, self.height, 0, self.alpha, (1, 1), self.color)
         self.text.render((LAUNCHER_WIDTH-10) - 7.5 + self.x_offset, (890*_hscale) - self.height * (0.5) - self.id * (self.height + 20 * _hscale), TIP_TEXT_SCALE, TIP_TEXT_SCALE, 0, 1, (1, 0.5), self.tcolor)
@@ -173,21 +242,37 @@ def import_chart():
     global chart_path
     chart_path = askopenfilename(title = '请选择谱面文件',filetypes = [('Phiedit Chart File', '.pez .zip .json')])
     TEXT[1][3][0].change_text(chart_path)
-    format, n, l, m, i, cp, ce, il = get_info(chart_path)
-    if format == "rpe":
-        INPUTBOARD[1][0].set(n)
-        INPUTBOARD[1][1].set(l)
-        INPUTBOARD[1][4].set(cp)
-        INPUTBOARD[1][5].set(ce)                                                                       
-        INPUTBOARD[1][6].set(il)
-        if not m is None:
-            global music_path
-            music_path = m
-            TEXT[1][6][0].change_text(m)
-        if not i is None:
-            global ill_path
-            ill_path = i
-            TEXT[1][9][0].change_text(i)
+    if os.path.splitext(chart_path)[-1] == '.zip' or os.path.splitext(chart_path)[-1] == '.pez':
+        BUTTON[1][1].set_disable(True)
+        BUTTON[1][2].set_disable(True)
+        INPUTBOARD[1][0].set_disable(True)
+        INPUTBOARD[1][1].set_disable(True)
+        INPUTBOARD[1][4].set_disable(True)
+        INPUTBOARD[1][5].set_disable(True)
+        INPUTBOARD[1][6].set_disable(True)
+    else:
+        BUTTON[1][1].set_disable(False)
+        BUTTON[1][2].set_disable(False)
+        INPUTBOARD[1][0].set_disable(False)
+        INPUTBOARD[1][1].set_disable(False)
+        INPUTBOARD[1][4].set_disable(False)
+        INPUTBOARD[1][5].set_disable(False)
+        INPUTBOARD[1][6].set_disable(False)
+        format, n, l, m, i, cp, ce, il = get_info(chart_path)
+        if format == "rpe":
+            INPUTBOARD[1][0].set(n)
+            INPUTBOARD[1][1].set(l)
+            INPUTBOARD[1][4].set(cp)
+            INPUTBOARD[1][5].set(ce)                                                                       
+            INPUTBOARD[1][6].set(il)
+            if not m is None:
+                global music_path
+                music_path = m
+                TEXT[1][6][0].change_text(m)
+            if not i is None:
+                global ill_path
+                ill_path = i
+                TEXT[1][9][0].change_text(i)
 
 def import_music():
     global music_path
@@ -218,11 +303,11 @@ def start():
         aspect_ratio = "16:9"
     if not is_number(bg_alpha):
         bg_alpha = 0.1
-    m_type = "python main.py" if os.path.exists(".\\main.py") else ("main.exe" if os.path.exists(".\\main.exe") else None)
+    m_type = f"{python} main.py" if os.path.exists(".\\main.py") else ("main.exe" if os.path.exists(".\\main.exe") else None)
     if m_type is None:
         error("找不到 main.py 或 main.exe")
     else:
-        cmd=f"{m_type} --chart \"{chart_path}\" --music \"{music_path}\" --illustration \"{ill_path}\" --name \"{name}\" --level \"{level}\" --composer \"{composer}\" --charter \"{charter}\" --illustrator \"{illustrator}\" --combotips \"{combo_tips}\" --aspectratio \"{aspect_ratio}\" --bgalpha {bg_alpha}{' --noautoplay' if noautoplay else ''}{f' --illblur {ill_blur}' if ill_blur.isdigit() else ''}{f" --width {w}" if w.isdigit() else ""}{f" --height {h}" if h.isdigit() else ""}{f" --render{f" --fps {fps}" if fps.isdigit() else ""}{f" --bitrate {bitrate}" if bitrate.isdigit() else ""}" if open_render else ""} {argv}"
+        cmd=f"{m_type} --chart \"{chart_path}\" --music \"{music_path}\" --illustration \"{ill_path}\" --name \"{name}\" --level \"{level}\" --composer \"{composer}\" --charter \"{charter}\" --illustrator \"{illustrator}\" --combotips \"{combo_tips}\" --aspectratio \"{aspect_ratio}\" --bgalpha {bg_alpha}{' --showbar' if show_bar else ''}{' --noautoplay' if noautoplay else ''}{f' --illblur {ill_blur}' if ill_blur.isdigit() else ''}{f" --width {w}" if w.isdigit() else ""}{f" --height {h}" if h.isdigit() else ""}{f" --render{f" --fps {fps}" if fps.isdigit() else ""}{f" --bitrate {bitrate}" if bitrate.isdigit() else ""}" if open_render else ""} {argv}"
         print(cmd)
         win32gui.ShowWindow(hwnd, False)
         subprocess.run(cmd)
@@ -242,7 +327,7 @@ def previous_page():
     if page > 1:
         page-=1
     else:
-        tips.append(Tip(LOCALES['launcher']['frist-page'],(0.2,1,0.2),(1,1,1),(0.2,1,0.2),2,0.6))
+        tips.append(Tip(LOCALES['launcher']['first-page'],(0.2,1,0.2),(1,1,1),(0.2,1,0.2),2,0.6))
     TEXT[0][0][0].change_text(f"{page} / {max_page}")
 
 def switch_render():
@@ -255,65 +340,79 @@ def switch_noautoplay():
     noautoplay = not noautoplay
     TEXT[4][2][0].change_text("√" if noautoplay else "")
 
+def switch_acrylic():
+    global acrylic
+    acrylic = not acrylic
+    TEXT[3][10][0].change_text("√" if acrylic else "")
+
+def switch_showbar():
+    global show_bar
+    show_bar = not show_bar
+    TEXT[3][12][0].change_text("√" if show_bar else "")
+
 TEXT = (
     (#0
-        (Text(f"{page} / {max_page}",font), (600, 20), 0.35, (0.5, 0.5), (1, 1, 1), "1"),
-        (Text(f"→",font), (1160, 40), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
-        (Text(f"←",font), (1095, 40), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
-        (Text(LOCALES['launcher']['start'],font), (40, 35), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text(f"{page} / {max_page}",FONT), (600, 20), 0.35, (0.5, 0.5), (1, 1, 1), "1"),
+        (Text(f"→",FONT), (1160, 40), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
+        (Text(f"←",FONT), (1095, 40), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['start'],FONT), (40, 35), 0.5, (0, 0.5), (0, 0, 0), "1"),
     ),
     (#1
-        (Text(LOCALES['launcher']['title-1'],font), (600, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
-        (Text(LOCALES['launcher']['chart'],font), (40, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("点击选择谱面",font), (250, 750), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
-        (Text(LOCALES['launcher']['not-select'],font,800), (385, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text(LOCALES['launcher']['music'],font), (40, 685), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("点击选择音乐",font), (250, 685), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
-        (Text(LOCALES['launcher']['not-select'],font,800), (385, 685), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text(LOCALES['launcher']['illustration'],font), (40, 620), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("点击选择曲绘",font), (250, 620), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
-        (Text(LOCALES['launcher']['not-select'],font,800), (385, 620), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text(LOCALES['launcher']['name'],font), (40, 555), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("null",font,1050), (130, 555), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text(LOCALES['launcher']['level'],font), (40, 490), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("null",font,1050), (130, 490), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text(LOCALES['launcher']['window-width'],font), (40, 230), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text(LOCALES['launcher']['window-height'],font), (40, 165), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("1200",font,975), (205, 230), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text("900",font,975), (205, 165), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text(LOCALES['launcher']['composer'],font), (40, 425), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("null",font,1050), (130, 425), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text(LOCALES['launcher']['charter'],font), (40, 360), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("null",font,1050), (130, 360), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text(LOCALES['launcher']['illustrator'],font), (40, 295), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("null",font,1050), (130, 295), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text(LOCALES['launcher']['argv'],font), (40, 100), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("",font,975), (205, 100), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['title-1'],FONT), (600, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['chart'],FONT), (40, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("点击选择谱面",FONT), (250, 750), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['not-selected'],FONT,800), (385, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['music'],FONT), (40, 685), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("点击选择音乐",FONT), (250, 685), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['not-selected'],FONT,800), (385, 685), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['illustration'],FONT), (40, 620), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("点击选择曲绘",FONT), (250, 620), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['not-selected'],FONT,800), (385, 620), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['name'],FONT), (40, 555), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("null",FONT,1050), (130, 555), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['level'],FONT), (40, 490), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("null",FONT,1050), (130, 490), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['window-width'],FONT), (40, 230), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['window-height'],FONT), (40, 165), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("1200",FONT,975), (205, 230), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text("900",FONT,975), (205, 165), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['composer'],FONT), (40, 425), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("null",FONT,1050), (130, 425), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['charter'],FONT), (40, 360), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("null",FONT,1050), (130, 360), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['illustrator'],FONT), (40, 295), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("null",FONT,1050), (130, 295), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['argv'],FONT), (40, 100), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("",FONT,975), (205, 100), 0.5, (0, 0.5), (0, 0, 0), "1"),
     ),
     (#2
-        (Text(LOCALES['launcher']['title-2'],font), (600, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
-        (Text(LOCALES['launcher']['render'],font), (100, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text(LOCALES['launcher']['fps'],font), (40, 685), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("60",font,1050), (130, 685), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text(LOCALES['launcher']['bitrate'],font), (40, 620), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("15000",font,1050), (130, 620), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text("",font), (64.5, 750), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['title-2'],FONT), (600, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['enable-render'],FONT), (100, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['fps'],FONT), (40, 685), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("60",FONT,1050), (130, 685), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['bitrate'],FONT), (40, 620), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("15000",FONT,1050), (130, 620), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text("",FONT), (64.5, 750), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
     ),
     (#3
-        (Text(LOCALES['launcher']['title-3'],font), (600, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
-        (Text(LOCALES['launcher']['combo-tips'],font), (40, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("COMBO",font,920), (260, 750), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text(LOCALES['launcher']['aspect-ratio'],font), (40, 685), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("16:9",font,1012.5), (167.5, 685), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text(LOCALES['launcher']['background-alpha'],font), (40, 620), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("0.1",font,975), (205, 620), 0.5, (0, 0.5), (0, 0, 0), "1"),
-        (Text(LOCALES['launcher']['illustration-blur'],font), (40, 555), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("80",font,975), (205, 555), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['title-3'],FONT), (600, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['combo-tips'],FONT), (40, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("COMBO",FONT,920), (260, 750), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['aspect-ratio'],FONT), (40, 685), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("16:9",FONT,1012.5), (167.5, 685), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['background-alpha'],FONT), (40, 620), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("0.1",FONT,975), (205, 620), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['illustration-blur'],FONT), (40, 555), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("80",FONT,975), (205, 555), 0.5, (0, 0.5), (0, 0, 0), "1"),
+        (Text('在这里加一个炫酷牛逼吊炸天的功能',FONT), (100, 490), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("",FONT), (64.5, 490), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
+        (Text('显示曲名前竖线',FONT), (100, 425), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("",FONT), (64.5, 425), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
     ),
     (#4
-        (Text(LOCALES['launcher']['title-4'],font), (600, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
-        (Text(LOCALES['launcher']['no-autoplay'],font), (100, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
-        (Text("",font), (64.5, 750), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
+        (Text(LOCALES['launcher']['title-4'],FONT), (600, 835), 0.75, (0.5, 0.5), (1, 1, 1), "1"),
+        (Text(LOCALES['launcher']['no-autoplay'],FONT), (100, 750), 0.5, (0, 0.5), (1, 1, 1), "1"),
+        (Text("",FONT), (64.5, 750), 0.5, (0.5, 0.5), (0, 0, 0), "1"),
     ),
 )
 
@@ -332,7 +431,8 @@ BUTTON = (
         Button(64.5,750,45,45,switch_render,(0.5,0.5)),
     ),
     (#3
-        
+        Button(64.5,490,45,45,switch_acrylic,(0.5,0.5)),
+        Button(64.5,425,45,45,switch_showbar,(0.5,0.5)),
     ),
     (#4
         Button(64.5,750,45,45,switch_noautoplay,(0.5,0.5)),
@@ -368,7 +468,11 @@ INPUTBOARD = (
     ),
 )
 
+tips: list[Tip] = []
+tip_id: list[int] = []
+
 def draw_ui():
+    global tip_id
     for button in BUTTON[0] + BUTTON[page]:
         button.draw()
     for inputboard in INPUTBOARD[0] + INPUTBOARD[page]:
@@ -377,10 +481,11 @@ def draw_ui():
         text[0].render(text[1][0]*_hscale,text[1][1]*_hscale,text[2]*_hscale,text[2]*_hscale,0,1,text[3],text[4])
     for i in tips.copy():
         if i.update():
+            _id = i.id
             tips.remove(i)
-
-tips: list[Tip] = []
-tip_id: list[int] = []
+            for t in tips.copy():
+                t.t_rem(_id)
+            tip_id = [(i-1 if i > _id else i) for i in tip_id]
 
 while True:
     clock.tick()
@@ -397,11 +502,13 @@ while True:
         if event.type == pygame.TEXTINPUT:
             for inputboard in INPUTBOARD[0] + INPUTBOARD[page]:
                 inputboard.input(event.text)
+        if event.type == pygame.TEXTEDITING:
+            for inputboard in INPUTBOARD[0] + INPUTBOARD[page]:
+                inputboard.edit(event.text)
         if event.type == pygame.KEYDOWN:
             if event.unicode == "\x08":
                 for inputboard in INPUTBOARD[0] + INPUTBOARD[page]:
                     inputboard.back()
-
 
     glClear(GL_COLOR_BUFFER_BIT)
 

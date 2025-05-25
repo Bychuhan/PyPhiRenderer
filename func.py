@@ -1,4 +1,4 @@
-import sys, random, unicodedata
+import sys, random, unicodedata, math
 from OpenGL.GL import *
 from OpenGL.GLU import gluDisk
 from OpenGL.GLU import gluNewQuadric
@@ -123,7 +123,11 @@ def get(path):
 def get_tip(path):
     with open(path, "r", encoding="utf-8") as f:
         f = f.readlines()
-        return f[random.randint(0,len(f)-1)]
+        if len(f) == 0:
+            return ''
+        tip = f[random.randint(0,len(f)-1)]
+        tip = (tip[:-1] if tip[-1] == '\n' else tip)
+        return tip
 
 def is_number(s):
     try:
@@ -135,3 +139,18 @@ def is_number(s):
 def is_chinese(char):
     n = unicodedata.name(char)
     return ('CJK' in n or n == "FULLWIDTH COMMA")
+
+def is_intersection(midpoint, angle, width, height):
+    x_mid, y_mid = midpoint
+    if angle == 90 or angle == 270:
+        return 0 <= x_mid <= width
+    if angle == 0 or angle == 180:
+        return 0 <= y_mid <= height
+    slope = math.tan(angle)
+    intercept = y_mid - slope * x_mid
+    y_left = slope * 0 + intercept
+    y_right = slope * width + intercept
+    x_bottom = (0 - intercept) / slope
+    x_top = (height - intercept) / slope
+    return (0 <= y_left <= height) or (0 <= y_right <= height) or (0 <= x_bottom <= width) or (0 <= x_top <= width)
+    # 这是kbw写的。关注B站空吧哇热门手法玩家谢谢喵

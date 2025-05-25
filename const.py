@@ -1,8 +1,9 @@
-import sys, pygame, locale, os, win32api, win32con
+import sys, pygame, locale, os
 from func import *
 from json import loads
 pygame.init()
 
+VERSION = '0.0.1.2'
 SCRAEEN_SCALE = pygame.display.get_desktop_sizes()[0][0] / 1920
 ASPECT_RATIO = [int(i) for i in (get_value("aspectratio", "16:9")).split(":")]
 REAL_WIDTH = int(get_value("width", 1200 * SCRAEEN_SCALE))
@@ -28,7 +29,7 @@ HIT_SCALE = HIT_WIDTH / 256
 PARTICLE_COLOR = HIT_COLOR
 WIDTH_SCALE = WINDOW_WIDTH / 800
 HEIGHT_SCALE = WINDOW_HEIGHT / 600
-PARTICLE_SIZE = 17.5 * WIDTH_SCALE
+PARTICLE_SIZE = 18.5 * WIDTH_SCALE
 RPE_LINE_WIDTH = WINDOW_WIDTH * (4000 / 1350)
 RPE_LINE_HEIGHT = WINDOW_HEIGHT * (5 / 900)
 LINE_COLOR_GOOD = (0.6353, 0.9333, 1)

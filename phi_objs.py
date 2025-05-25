@@ -98,6 +98,11 @@ class JudgeLine:
         init_event(self.rotate_events, self.bpm)
         init_event(self.alpha_events, self.bpm)
         init_speed_event(self.speed_events, self.bpm)
+        ### revelation
+        #for i in self.alpha_events:
+        #    i['start'] = i['start'] * 0.8 + 0.2
+        #    i['end'] = i['end'] * 0.8 + 0.2
+        ###
         for i in self.notes_above:
             i["isAbove"] = 1
         for i in self.notes_below:
@@ -240,6 +245,7 @@ class Note:
         if time >= self.time:
             if not self.click:
                 self.timer = self.time + 30 / bpm
+                self.timer -= (self.timer - self.time) % (30 / bpm * 0.26)
                 NOTE_SOUNDS[self.type - 1].play()
                 self.click = True
                 self.hittime = self.time
@@ -271,8 +277,10 @@ class Note:
         if self.type == 3:
             self.endx = self.x + math.cos(math.radians(linerot + 90)) * (self.length * self.is_above)
             self.endy = self.y + math.sin(math.radians(linerot + 90)) * (self.length * self.is_above)
+
         if self.now_fp * self.speed > WINDOW_HEIGHT * 2 or math.ceil(self.now_fp) < 0 or self.hold_speed == 0:
             return
+
         self.draw(self.x, self.y, self.endx, self.endy, linerot)
 
     def draw(self, x, y, endx, endy, rot):

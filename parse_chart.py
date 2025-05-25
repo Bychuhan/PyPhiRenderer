@@ -44,7 +44,6 @@ def parse_chart(chart_path):
                 offset = chart["META"]["offset"] / 1000
                 judgeLineList = chart["judgeLineList"]
                 BPMList = chart["BPMList"]
-                group = chart["judgeLineGroup"]
                 for i in range(len(BPMList)):
                     if i == len(BPMList)-1:
                         BPMList[i]["endTime"] = 9999999999
@@ -55,7 +54,7 @@ def parse_chart(chart_path):
                 for i in BPMList:
                     i["time"] = _t + 60 / i["bpm"] * (i["endTime"] - i["startTime"])
                     _t == i["time"]
-                lines = [rpe_objs.JudgeLine(data, BPMList) for data in judgeLineList if group[data['Group']] != '.']
+                lines = [rpe_objs.JudgeLine(data, BPMList) for data in judgeLineList]
                 for i in lines:
                     if i.father != -1:
                         i.father_line = lines[i.father]
@@ -161,3 +160,25 @@ def parse_extra(path):
                 #info(f"Loaded video | {i["path"]}")
 
     return shaders, videos
+
+def parse_info(path):
+    file_type = os.path.splitext(path)[1]
+    file_path = os.path.split(path)[0]
+    if file_type == '.yml':
+        import yaml
+        with open(path, 'r', encoding='utf-8') as f:
+            f = yaml.load(f, Loader=yaml.FullLoader)
+            return f"{file_path}\\{f['chart']}", f"{file_path}\\{f['music']}", f"{file_path}\\{f['illustration']}", f['name'], f['level'], f['composer'], f['charter'], f['illustrator']
+    elif file_type == '.txt':
+        with open(path, 'r', encoding='utf-8') as f:
+            f = f.readlines()
+            data = {}
+            for i in f:
+                i = i.replace('\n', '').split(': ')
+                if len(i) > 1:
+                    data[i[0]] = i[1]
+            return f"{file_path}\\{data['Chart']}", f"{file_path}\\{data['Song']}", f"{file_path}\\{data['Picture']}", data['Name'], data['Level'], data['Composer'], data['Charter'], 'UK'
+    elif file_type == '.csv':
+        error_and_exit_no_tip('你来的真早！csv格式info支持正在憋憋中，敬请谅解。/大怨种')
+    else:
+        error_and_exit_no_tip('未知的info格式')

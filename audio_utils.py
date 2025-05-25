@@ -1,7 +1,7 @@
 import numpy as np
 from pydub import AudioSegment
 
-FR, SW, CH = 44100, 2, 2
+FR, SW, CH = 132300, 2, 2
 
 def normalize(seg: AudioSegment):
     if seg.channels != CH: seg = seg.set_channels(CH)

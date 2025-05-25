@@ -1,6 +1,7 @@
 import pygame
 from func import *
 from const import *
+pygame.init()
 
 class Text:
     def __init__(self, text: str, font: pygame.font.Font, maxwidth = 999999):

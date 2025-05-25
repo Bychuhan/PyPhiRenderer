@@ -1,5 +1,5 @@
 import pygame, data, sys, subprocess, tqdm, err_hook, math, time, os, win32gui
-from pygame.locals import DOUBLEBUF, OPENGL
+from pygame.locals import DOUBLEBUF, OPENGL, SRCALPHA
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from const import *
@@ -10,19 +10,33 @@ from texture import *
 from PIL import Image, ImageFilter
 from log import *
 from states import *
-"""from ending import *
-from loading import *"""
+'''from ending import *
+from loading import *'''
 
 pygame.init()
-window = pygame.display.set_mode((REAL_WIDTH, REAL_HEIGHT), flags = DOUBLEBUF | OPENGL)
+window = pygame.display.set_mode((REAL_WIDTH, REAL_HEIGHT), flags = DOUBLEBUF | OPENGL | SRCALPHA)
 icon = pygame.image.load(".\\Resources\\icon.png")
 pygame.display.set_caption(CAPTION)
 pygame.display.set_icon(icon)
 gluOrtho2D(0, REAL_WIDTH, 0, REAL_HEIGHT)
+#gluOrtho2D(-REAL_WIDTH*3/2-REAL_WIDTH/2, REAL_WIDTH*3, -REAL_HEIGHT*3/2-REAL_HEIGHT/2, REAL_HEIGHT*3)
 glEnable(GL_BLEND)
 glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-hwnd = win32gui.FindWindow(None, pygame.display.get_caption()[0])
+clock = pygame.time.Clock()
+
+hwnd = pygame.display.get_wm_info()['window']#win32gui.FindWindow(None, pygame.display.get_caption()[0])
+
+'''
+import win32con, win32api
+from BlurWindow import blurWindow
+
+blurWindow.GlobalBlur(hwnd)
+
+ex_style = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
+ex_style |= win32con.WS_EX_LAYERED
+win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, ex_style)
+win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0, 0, 0), 1, win32con.LWA_COLORKEY)'''
 
 if "--render" in sys.argv and "--preview" not in sys.argv:
     win32gui.ShowWindow(hwnd, False)
@@ -30,11 +44,13 @@ if "--render" in sys.argv and "--preview" not in sys.argv:
 from parse_chart import *
 from core import *
 
+show_bar = '--showbar' in sys.argv
+
 UI = (
     (Text(str(data.judges.combo),FONT), (WINDOW_WIDTH / 2, 570.78 * HEIGHT_SCALE), 0.5667 * HEIGHT_SCALE, (0.5, 0.5), "combonumber"),
     (Text(get_value("combotips", "COMBO"),FONT), (WINDOW_WIDTH / 2, 543.25 * HEIGHT_SCALE), 0.1973 * HEIGHT_SCALE, (0.5, 0.5), "combo"),
     (Text(str(data.judges.score),FONT), (WINDOW_WIDTH - 22.2 * HEIGHT_SCALE, 582.2 * HEIGHT_SCALE), 0.4031 * HEIGHT_SCALE, (1, 1), "score"),
-    (Text("",FONT,0.647 * WINDOW_HEIGHT), (23.8 * HEIGHT_SCALE, 18.6 * HEIGHT_SCALE), 0.288 * HEIGHT_SCALE, (0, 0), "name"),
+    (Text("",FONT,0.647 * WINDOW_HEIGHT), ((28 if show_bar else 23.8) * HEIGHT_SCALE, 18.6 * HEIGHT_SCALE), 0.288 * HEIGHT_SCALE, (0, 0), "name"),
     (Text("",FONT), (WINDOW_WIDTH - 23.8 * HEIGHT_SCALE, 18.6 * HEIGHT_SCALE), 0.288 * HEIGHT_SCALE, (1, 0), "level"),
     #(Text("100.00%",FONT), (WINDOW_WIDTH - 22.2 * HEIGHT_SCALE, 550 * HEIGHT_SCALE), 0.25 * HEIGHT_SCALE, (1, 1), "acc"),
 )
@@ -44,6 +60,52 @@ if "--chart" in sys.argv:
 else:
     print("chart")
     chart_path = askopenfilename()
+
+iszip = os.path.splitext(chart_path)[1] == '.zip' or os.path.splitext(chart_path)[1] == '.pez'
+
+if iszip:
+    import zipfile
+    chart_zip = zipfile.ZipFile(chart_path)
+    r = hex(int(random.random() * (8 ** 16)))[2:]
+    file_path = f".\\.temp\\{r}"
+    chart_zip.extractall(file_path)
+    info_path = (f"{file_path}\\info.yml" if os.path.exists(f"{file_path}\\info.yml") else (f"{file_path}\\info.txt" if os.path.exists(f"{file_path}\\info.txt") else (f"{file_path}\\info.csv" if os.path.exists(f"{file_path}\\info.csv") else (None))))
+    if info_path is None:
+        error_and_exit_no_tip('未找到info')
+    chart_path, music_path, illustration_path, name, level, composer, charter, illustrator = parse_info(info_path)
+else:
+    if "--music" in sys.argv:
+        music_path = get_value("music", "")
+    else:
+        print("music")
+        music_path = askopenfilename()
+
+    if "--illustration" in sys.argv:
+        illustration_path = get_value("illustration", "")
+    else:
+        print("illustration")
+        illustration_path = askopenfilename()
+    t_text = None
+    if not ("--name" in sys.argv and "--level" in sys.argv):
+        clock.tick()
+        t_text = Text("看看控制台TAT", FONT)
+        t_text.render(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, -1, 1, 0, 1, (0.5, 0.5), (1, 1, 1))
+        pygame.display.flip()
+    if "--name" in sys.argv:
+        name = get_value("name", "UK")
+    else:
+        print("songname:",end="")
+        name = input()
+    if "--level" in sys.argv:
+        level = get_value("level", "UK")
+    else:
+        print("level:",end="")
+        level = input()
+    t_text = None
+    composer = get_value("composer", "UK")
+    charter = get_value("charter", "UK")
+    illustrator = get_value("illustrator", "UK")
+
 lines, formatVersion, offset, num_of_notes, chart, format, bpm_list, attachUI, path = parse_chart(chart_path)
 if "--offset" in sys.argv:
     offset = int(get_value("offset", offset))
@@ -68,29 +130,19 @@ for line in lines:
     line.load_note_hl()
     line.load_note()
 
-if "--music" in sys.argv:
-    music_path = get_value("music", "")
-else:
-    print("music")
-    music_path = askopenfilename()
 music = musicCls()
 try:
     music.load(music_path)
 except:
-    error_and_exit_no_tip("傻逼你音乐呢")
+    error_and_exit_no_tip("音乐加载失败")
 music_length = music.get_length()
 info(f"Loaded music | {music_path}")
-
-if "--illustration" in sys.argv:
-    illustration_path = get_value("illustration", "")
-else:
-    print("illustration")
-    illustration_path = askopenfilename()
 
 try:
     illustration = Image.open(illustration_path)
 except:
-    error_and_exit_no_tip("傻逼你曲绘呢")
+    error_and_exit_no_tip("曲绘加载失败")
+n_ill = illustration
 if REAL_WIDTH / illustration.width > REAL_HEIGHT / illustration.height:
     ill_scale = REAL_WIDTH / illustration.width
 else:
@@ -104,34 +156,15 @@ rill_yfs = (illustration.height-REAL_HEIGHT)/2
 illustration = Texture.from_image(illustration)
 info(f"Loaded illustration | {illustration_path}")
 
-clock = pygame.time.Clock()
-
-t_text = None
-if not ("--name" in sys.argv and "--level" in sys.argv):
-    clock.tick()
-    t_text = Text("看看控制台TAT", FONT)
-    t_text.render(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, -1, 1, 0, 1, (0.5, 0.5), (1, 1, 1))
-    pygame.display.flip()
-
-if "--name" in sys.argv:
-    name = get_value("name", "UK")
-else:
-    print("songname:",end="")
-    name = input()
 UI[3][0].change_text(str(name))
-if "--level" in sys.argv:
-    level = get_value("level", "UK")
-else:
-    print("level:",end="")
-    level = input()
 UI[4][0].change_text(str(level))
-composer = get_value("composer", "UK")
-charter = get_value("charter", "UK")
-illustrator = get_value("illustrator", "UK")
+
+if iszip:
+    import shutil
+    shutil.rmtree(f".\\.temp\\{r}")
+
 tip = get_tip(".\\Resources\\tips")
 bg_alpha = float(get_value('bgalpha', 0.1))
-
-t_text = None
 
 """with open(".\\temp.txt", "w", encoding="utf-8") as f:
     f.write(f"python main.py --chart \"{chart_path}\" --music \"{music_path}\" --illustration \"{illustration_path}\" --name \"{name}\" --level \"{level}\"{" --render" if "--render" in sys.argv else ""}")
@@ -153,7 +186,7 @@ def draw_ui(time):
     for text in UI:
         if (text[4] == "combo" or text[4] == "combonumber") and data.judges.combo < 3:
             continue
-        text[0].render(text[1][0],text[1][1],text[2],text[2],0,1,text[3],(1,1,1), now_time)
+        text[0].render(text[1][0],text[1][1],text[2],text[2],0,1,text[3],(1,1,1), time)
     if pause_attach is None:
         draw_rect(19.83 * HEIGHT_SCALE, 578.1 * HEIGHT_SCALE, 6.2 * HEIGHT_SCALE, 22 * HEIGHT_SCALE, 0, 1, (0,1), (1,1,1), xoffset=X_OFFSET)
         draw_rect(32 * HEIGHT_SCALE, 578.1 * HEIGHT_SCALE, 6.2 * HEIGHT_SCALE, 22 * HEIGHT_SCALE, 0, 1, (0,1), (1,1,1), xoffset=X_OFFSET)
@@ -168,7 +201,7 @@ def draw_ui(time):
         _2y = _y + math.sin(math.radians(lr)) * (_2xt * lsx)
         draw_rect(_x, _y, _xs, _ys, lr, la, (0,1), lc, xoffset=X_OFFSET)
         draw_rect(_2x, _2y,_xs, _ys, lr, la, (0,1), lc, xoffset=X_OFFSET)
-    process = (now_time + offset) / music_length
+    process = (time + offset) / music_length
     s = 0 - 6.3 * HEIGHT_SCALE / 2
     if bar_attach is None:
         draw_rect(s + process * (WINDOW_WIDTH - s), WINDOW_HEIGHT, 2 * HEIGHT_SCALE, 6.3 * HEIGHT_SCALE, 0, 1, (0,1), (1,1,1), xoffset=X_OFFSET)
@@ -181,40 +214,42 @@ def draw_ui(time):
         _2y = _y + math.sin(math.radians(lr)) * (process * (WINDOW_WIDTH - s))
         draw_rect(_2x, _2y, 2 * HEIGHT_SCALE, 6.3 * HEIGHT_SCALE * lsy, lr, la, (0,0.5), lc, xoffset=X_OFFSET)
         draw_rect(lx + s, _y, process * (WINDOW_WIDTH - s), 6.3 * HEIGHT_SCALE * lsy, lr, la, (0,0.5), lc, xoffset=X_OFFSET)
+    if show_bar:
+        draw_rect(16.67 * HEIGHT_SCALE, 20 * HEIGHT_SCALE, 3.89 * HEIGHT_SCALE, 20 * HEIGHT_SCALE, 0, 1, (0, 0), (1, 1, 1), xoffset=X_OFFSET)
 
-def phi_update():
+def phi_update(time):
     for line in lines:
-        line.update(now_time)
+        line.update(time)
         line.draw()
     for line in lines:
-        line.update_hold(now_time)
+        line.update_hold(time)
     for line in lines:
-        line.update_note(now_time)
+        line.update_note(time)
     for line in lines:
-        line.update_hit(now_time)
+        line.update_hit(time)
 
 if format == "rpe":
     bpm = bpm_list[0]["bpm"]
 
-def update_bpm(bpmlist):
+def update_bpm(bpmlist, time):
     if len(bpmlist) == 1:
         return bpm_list[0]["bpm"]
-    if now_time >= bpm_list[0]["time"]:
+    if time >= bpm_list[0]["time"]:
         bpm_list.pop(0)
-        return update_bpm(bpmlist)
+        return update_bpm(bpmlist, time)
     return bpm_list[0]["bpm"]
 
-def rpe_update():
-    bpm = update_bpm(bpm_list)
+def rpe_update(time):
+    bpm = update_bpm(bpm_list, time)
     for line in lines:
-        line.update(now_time)
+        line.update(time)
         line.draw()
     for line in lines:
-        line.update_hold(now_time, bpm, keys)
+        line.update_hold(time, bpm, keys)
     for line in lines:
-        line.update_note(now_time, keys)
+        line.update_note(time, keys)
     for line in lines:
-        line.update_hit(now_time)
+        line.update_hit(time)
 
 ui_state = States.Playing
 keys = []
@@ -222,13 +257,14 @@ keys = []
 if "--render" not in sys.argv:
     pygame.display.set_caption(f"{CAPTION} | PLAYING")
     music.play()
-    _t = - offset
+    _t = - offset 
     start_time = time.time()
     pause = False
     pause_start_time = time.time()
     y_st = time.time()
-    """loading_time = 0
-    loading = Loading(illustration_path, name=name, level=level, composer=composer, charter=charter, illustrator=illustrator, tip=tip)"""
+    '''loading_time = 0
+    loading = Loading(n_ill, name=name, level=level, composer=composer, charter=charter, illustrator=illustrator, tip=tip)
+    ending: Ending = None'''
     while True:
         clock.tick()
 
@@ -240,10 +276,11 @@ if "--render" not in sys.argv:
             if ui_state == States.Playing:
                 if not AUTOPLAY:
                     if event.type == pygame.KEYDOWN:
+                        print(event.unicode)
                         keys.append(event.unicode)
                         if format == 'rpe':
                             now_time = time.time() - start_time - offset
-                            bpm = update_bpm(bpm_list)
+                            bpm = update_bpm(bpm_list, now_time)
                             t = 9999999
                             n = None
                             rt = 9999999
@@ -256,7 +293,6 @@ if "--render" not in sys.argv:
                                 if nrt < rt and abs(nrt) <= 0.08:
                                     rt = nrt
                                     rn = nrn
-                            #print(rn)
                             if t != 9999999:
                                 if not (not rn is None and (abs(t)>0.08)):
                                     debug(f"{t if t < 0 else f"+{t}"} | {'perfect' if abs(t) <= 0.08 else ('good' if abs(t) <= 0.16 else 'bad')}")
@@ -270,7 +306,10 @@ if "--render" not in sys.argv:
                             n = None
                             rn = None
                     if event.type == pygame.KEYUP:
-                        keys.remove(event.unicode)
+                        try:
+                            keys.remove(event.unicode)
+                        except:
+                            pass
                 if event.type == pygame.MOUSEWHEEL:
                     if pause:
                         y_st += event.y * 0.5
@@ -282,7 +321,7 @@ if "--render" not in sys.argv:
                         pause = not pause
                         if pause:
                             pause_start_time = time.time()
-                            y_st = start_time
+                            y_st = start_time 
                             music.pause()
                         else:
                             start_time = y_st + (time.time() - pause_start_time)
@@ -294,11 +333,14 @@ if "--render" not in sys.argv:
 
         glClear(GL_COLOR_BUFFER_BIT)
 
+        draw_texture(illustration, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 1, 1, 0, 1, (0.5,0.5), (1,1,1), xoffset=X_OFFSET)
+        draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,0.5,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
+        draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,bg_alpha,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
+
         match ui_state:
             case 1:
                 pass
-                """draw_texture(illustration, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 1, 1, 0, 1, (0.5,0.5), (1,1,1))
-                if loading.update():
+                '''if loading.update():
                     loading = None
                     music.play()
                     _t = - offset
@@ -308,7 +350,7 @@ if "--render" not in sys.argv:
                     y_st = time.time()
                     ui_state = States.Playing
                 else:
-                    loading.draw()"""
+                    loading.draw()'''
 
             case 2:
                 if pause:
@@ -319,15 +361,10 @@ if "--render" not in sys.argv:
                     debug(f"FPS | {round(clock.get_fps())}")
                     _t += 1
 
-                draw_texture(illustration, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 1, 1, 0, 1, (0.5,0.5), (1,1,1), xoffset=X_OFFSET)
-                draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,0.5,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
-                draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,bg_alpha,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
-
-
                 if format == "phi":
-                    phi_update()
+                    phi_update(now_time)
                 elif format == "rpe":
-                    rpe_update()
+                    rpe_update(now_time)
 
                 update_ui()
                 draw_ui(now_time)
@@ -338,16 +375,16 @@ if "--render" not in sys.argv:
                     draw_rect(0,0,X_OFFSET,REAL_HEIGHT,0,0.7,(0,0),(0.1,0.1,0.1))
                     draw_rect(REAL_WIDTH,0,X_OFFSET,REAL_HEIGHT,0,0.7,(1,0),(0.1,0.1,0.1))
 
-                """if now_time + offset > music_length:
+                '''if now_time + offset > music_length:
                     lines.clear()
                     music.stop()
-                    ending = Ending()
-                    ui_state = States.Ending"""
+                    ending = Ending(n_ill, name, level)
+                    ui_state = States.Ending'''
 
             case 3:
                 pass
-                """ending.update()
-                ending.draw()"""
+                '''ending.update()
+                ending.draw()'''
 
         pygame.display.flip()
 else:
@@ -376,15 +413,17 @@ else:
                     pygame.quit()
                     exit()
                     break
+
         glClear(GL_COLOR_BUFFER_BIT)
 
         draw_texture(illustration, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 1, 1, 0, 1, (0.5,0.5), (1,1,1), xoffset=X_OFFSET)
-        draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,0.6,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
+        draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,0.5,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
+        draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,bg_alpha,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
 
         if format == "phi":
-            phi_update()
+            phi_update(now_time)
         elif format == "rpe":
-            rpe_update()
+            rpe_update(now_time)
         update_ui()
         draw_ui(now_time)
 
@@ -400,6 +439,7 @@ else:
         frame_image = glReadPixels(0, 0, REAL_WIDTH, REAL_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE)
         process.stdin.write(frame_image)
         now_time += delta
+
     process.stdin.close()
     process.wait()
 

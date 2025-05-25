@@ -214,21 +214,6 @@ def get_floorposition(speedevents, time):
                 _fp += i["fp"]
     return _fp
 
-def is_intersection(midpoint, angle, width, height):
-    x_mid, y_mid = midpoint
-    if angle == 90 or angle == 270:
-        return 0 <= x_mid <= width
-    if angle == 0 or angle == 180:
-        return 0 <= y_mid <= height
-    slope = math.tan(angle)
-    intercept = y_mid - slope * x_mid
-    y_left = slope * 0 + intercept
-    y_right = slope * width + intercept
-    x_bottom = (0 - intercept) / slope
-    x_top = (height - intercept) / slope
-    return (0 <= y_left <= height) or (0 <= y_right <= height) or (0 <= x_bottom <= width) or (0 <= x_top <= width)
-    # 这是kbw写的。关注B站空吧哇热门手法玩家谢谢喵
-
 class JudgeLine:
     def __init__(self, data: dict, bpm_list):
         self.bpm_list = bpm_list
@@ -765,6 +750,7 @@ class Note:
                 if not self.click:
                     if not self.is_fake:
                         self.timer = self.time + 30 / bpm
+                        self.timer -= (self.timer - self.time) % (30 / bpm * 0.26)
                         self.hitsound.play()
                         self.hittime = self.time
                         self.play_hit = True
@@ -777,8 +763,8 @@ class Note:
                         if time >= self.timer:
                             self.hittime = self.timer
                             self.play_hit = True
-                            self.timer -= (self.timer - self.time) % (30 / bpm * 0.26)
                             self.timer += 30 / bpm
+                            self.timer -= (self.timer - self.time) % (30 / bpm * 0.26)
                         if time >= self.judge_time and self.judgeed == False:
                             self.judgeed = True
                             data.judges.perfect += 1
@@ -899,9 +885,10 @@ class Note:
             d2 = math.sqrt((x2-WINDOW_WIDTH/2)**2+(y2-WINDOW_HEIGHT/2)**2)
             if d2 > d:
                 return 0
+            return
 
         if self.type != 2:
-            if not ((-WINDOW_WIDTH * 0.123 <= self.x <= WINDOW_WIDTH * 1.123) and (-WINDOW_WIDTH * 0.123 <= self.y <= WINDOW_HEIGHT * 1.123)):
+            if not ((-NOTE_WIDTH <= self.x <= WINDOW_WIDTH + NOTE_WIDTH) and (-NOTE_WIDTH <= self.y <= WINDOW_HEIGHT + NOTE_WIDTH)):
                 return
 
         if (math.ceil((self.end_r_fp * self.is_above + self.y_offset if self.type == 2 else self.r_fp * self.is_above + self.y_offset)) < 0 and iscover and (time <= self.time)):

@@ -10,7 +10,7 @@
     "window-width" : "窗口宽度",
     "window-height" : "窗口高度",
     "argv" : "其他参数",
-    "render" : "启用渲染",
+    "enable-render" : "启用渲染",
     "fps" : "帧数",
     "bitrate" : "码率",
     "combo-tips" : "COMBO文本",
@@ -18,7 +18,7 @@
     "background-alpha" : "背景变暗",
     "illustration-blur" : "曲绘模糊",
     "no-autoplay" : "禁用自动播放",
-    "not-select" : "未选择",
+    "not-selected" : "未选择",
     "start" : "启动",
 
     "title-1" : "基本设置",
@@ -26,6 +26,6 @@
     "title-3" : "页面3",
     "title-4" : "游玩设置",
 
-    "frist-page" : "已经是第一页",
+    "first-page" : "已经是第一页",
     "last-page" : "已经是最后一页"
 }

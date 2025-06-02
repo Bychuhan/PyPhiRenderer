@@ -896,7 +896,7 @@ class Note:
             if not ((-NOTE_WIDTH <= self.x <= WINDOW_WIDTH + NOTE_WIDTH) and (-NOTE_WIDTH <= self.y <= WINDOW_HEIGHT + NOTE_WIDTH)):
                 return
 
-        if (math.ceil((self.end_r_fp * self.is_above + self.y_offset if self.type == 2 else self.r_fp * self.is_above + self.y_offset)) < 0 and iscover and (time <= self.time)):
+        if (math.ceil((self.end_r_fp * self.is_above * self.speed + self.y_offset if self.type == 2 else self.r_fp * self.is_above * self.speed + self.y_offset)) < 0 and iscover and (time <= self.time)):
             return
         if time < self.visible_time:
             return

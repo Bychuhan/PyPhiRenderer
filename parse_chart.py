@@ -40,6 +40,10 @@ def parse_chart(chart_path):
                 attachUI = None
             if format == "rpe":
                 import rpe_objs
+                rpe_objs.LINE_TEXTURES = {}
+                rpe_objs.NOTE_HITSOUNDS = {}
+                rpe_objs.note_time_list = []
+                rpe_objs.note_hl_time = []
                 formatVersion = chart["META"]["RPEVersion"]
                 offset = chart["META"]["offset"] / 1000
                 judgeLineList = chart["judgeLineList"]

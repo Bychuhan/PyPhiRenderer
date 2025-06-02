@@ -3,7 +3,6 @@ from OpenGL.GL import *
 from OpenGL.GLU import gluDisk
 from OpenGL.GLU import gluNewQuadric
 from texture import *
-from pydub import AudioSegment
 from rpe_easings import *
 
 def draw_line(x1:float, y1:float, x2:float, y2:float,width:float,color:tuple[float,float,float,float],xoffset=0):
@@ -96,10 +95,6 @@ def draw_circle(x, y, r, a, color, xoffset=0):
     glTranslatef(x+xoffset, y, 0)
     gluDisk(gluNewQuadric(), 0, r, 32, 1)
     glPopMatrix()
-
-def get_audio_length(path):
-    audio = AudioSegment.from_file(path)
-    return audio.duration_seconds
 
 def get_value(name, default):
     try:

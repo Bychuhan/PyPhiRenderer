@@ -302,6 +302,8 @@ class JudgeLine:
         self.default_color = self.color
         self.is_cover = (True if data["isCover"] == 1 else False)
         self.scale_on_notes = (data["scaleOnNotes"] if "scaleOnNotes" in data else 0)
+        self.n_notes = []
+        self.note_holds = []
         self.preload()
 
     def preload(self):
@@ -389,8 +391,10 @@ class JudgeLine:
             i["hitsound"] = (NOTE_HITSOUNDS[i["hitsound"]] if "hitsound" in i else NOTE_SOUNDS[i["type"]-1])
         self.n_notes = [Note(data) for data in self.notes if data["type"] != 2]
         self.note_holds = [Note(data) for data in self.notes if data["type"] == 2]
+        print(self.note_holds)
         self.n_notes = self.note_sort(self.n_notes)
         self.note_holds = self.note_sort(self.note_holds)
+        print(self.note_holds)
         self.inote = len(self.n_notes) > 0 or len(self.note_holds) > 0
 
     def update_note(self, time, keys):
@@ -777,6 +781,7 @@ class Note:
                         self.y += math.sin(math.radians(linerot + 90)) * self.y_offset
                     if not self.is_fake:
                         if self.judgeed == False:
+                            self.judgeed = True
                             data.judges.perfect += 1
                             data.judges.combo += 1
                     return True
@@ -988,7 +993,7 @@ class Hit:
         self.p = 0
         self.hit_i = 0
         self.rot = tuple(math.radians(random.uniform(0, 360)) for i in range(4))
-        self.distance = tuple(random.uniform(125, 155) * WIDTH_SCALE for i in range(4))
+        self.distance = tuple(random.uniform(130, 160) * WIDTH_SCALE for i in range(4))
         self.color = color
 
     def update(self, time):

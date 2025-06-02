@@ -30,8 +30,6 @@ hwnd = win32gui.FindWindow(None, pygame.display.get_caption()[0])
 
 from core import *
 
-python = get_value('python', 'python')
-
 bg_path = ".\\Resources\\launcher_bg.jpg"
 bg = Image.open(bg_path)
 bg = bg.convert("RGBA")
@@ -303,7 +301,7 @@ def start():
         aspect_ratio = "16:9"
     if not is_number(bg_alpha):
         bg_alpha = 0.1
-    m_type = f"{python} main.py" if os.path.exists(".\\main.py") else ("main.exe" if os.path.exists(".\\main.exe") else None)
+    m_type = f"{sys.executable} main.py" if os.path.exists(".\\main.py") else ("main.exe" if os.path.exists(".\\main.exe") else None)
     if m_type is None:
         error("找不到 main.py 或 main.exe")
     else:

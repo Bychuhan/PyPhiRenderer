@@ -1,4 +1,4 @@
-import pygame, data, sys, subprocess, tqdm, err_hook, math, time, os, win32gui
+import pygame, data, sys, subprocess, tqdm, err_hook, math, time, os, win32gui, atexit
 from pygame.locals import DOUBLEBUF, OPENGL, SRCALPHA
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -10,6 +10,8 @@ from texture import *
 from PIL import Image, ImageFilter
 from log import *
 from states import *
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 '''from ending import *
 from loading import *'''
 
@@ -27,6 +29,8 @@ clock = pygame.time.Clock()
 
 hwnd = pygame.display.get_wm_info()['window']#win32gui.FindWindow(None, pygame.display.get_caption()[0])
 
+stop = False
+
 '''
 import win32con, win32api
 from BlurWindow import blurWindow
@@ -37,6 +41,39 @@ ex_style = win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE)
 ex_style |= win32con.WS_EX_LAYERED
 win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, ex_style)
 win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0, 0, 0), 1, win32con.LWA_COLORKEY)'''
+
+# tchart
+class TChart(FileSystemEventHandler):
+    def on_modified(self, event):
+        if os.path.exists(event.src_path):
+            time.sleep(0.2)
+            if os.path.samefile(chart_path, event.src_path):
+                global pause, pause_start_time, y_st, music, start_time, now_time, lines, stop
+                stop = True
+                lines.clear()
+                music.stop()
+                data.judges = data.Judge(0, 0, 0, 0, 0, 0, 0, 1, 2)
+                info("Reloading chart...")
+                load_chart(chart_path)
+                info(f"Loaded chart | {chart_path}")
+                music.play()
+                start_time = time.time()
+                now_time = 0.
+                stop = False
+            if os.path.samefile(music_path, event.src_path):
+                global music_length, offset
+                stop = True
+                music.stop()
+                info("Reloading music...")
+                try:
+                    music.load(music_path)
+                except:
+                    error_and_exit_no_tip("音乐加载失败")
+                music_length = music.get_length()
+                music.play()
+                music.set_pos(now_time + offset)
+                info(f"Loaded music | {music_path}")
+                stop = False
 
 if "--render" in sys.argv and "--preview" not in sys.argv:
     win32gui.ShowWindow(hwnd, False)
@@ -106,18 +143,24 @@ else:
     charter = get_value("charter", "UK")
     illustrator = get_value("illustrator", "UK")
 
-lines, formatVersion, offset, num_of_notes, chart, format, bpm_list, attachUI, path = parse_chart(chart_path)
-if "--offset" in sys.argv:
-    offset = int(get_value("offset", offset))
-pause_attach = None
-bar_attach = None
-if format == "rpe":
-    for i in UI:
-        if i[4] in attachUI:
-            if not attachUI[i[4]] is None:
-                i[0].attach(attachUI[i[4]])
-    pause_attach = attachUI["pause"]
-    bar_attach = attachUI["bar"]
+def load_chart(_path):
+    global lines, formatVersion, offset, num_of_notes, chart, format, bpm_list, attachUI, path, pause_attach, bar_attach
+    lines, formatVersion, offset, num_of_notes, chart, format, bpm_list, attachUI, path = parse_chart(_path)
+    if "--offset" in sys.argv:
+        offset = int(get_value("offset", offset))
+    pause_attach = None
+    bar_attach = None
+    if format == "rpe":
+        for i in UI:
+            if i[4] in attachUI:
+                if not attachUI[i[4]] is None:
+                    i[0].attach(attachUI[i[4]])
+        pause_attach = attachUI["pause"]
+        bar_attach = attachUI["bar"]
+    for line in lines:
+        line.load_note_hl()
+        line.load_note()
+load_chart(chart_path)
 info(f"Loaded chart | {chart_path}")
 
 shaders = {}
@@ -125,10 +168,6 @@ videos = {}
 if os.path.exists(f"{path}/extra.json"):
     extra_path = f"{path}/extra.json"
     shaders, videos = parse_extra(extra_path)
-
-for line in lines:
-    line.load_note_hl()
-    line.load_note()
 
 music = musicCls()
 try:
@@ -159,7 +198,7 @@ info(f"Loaded illustration | {illustration_path}")
 UI[3][0].change_text(str(name))
 UI[4][0].change_text(str(level))
 
-if iszip:
+if iszip and "--render" not in sys.argv:
     import shutil
     shutil.rmtree(f".\\.temp\\{r}")
 
@@ -262,131 +301,144 @@ if "--render" not in sys.argv:
     pause = False
     pause_start_time = time.time()
     y_st = time.time()
+
+    if not iszip:
+        def clean():
+            observer.stop()
+            observer.join()
+
+        atexit.register(clean)
+
+        event_handler = TChart()
+        observer = Observer()
+        observer.schedule(event_handler, path, recursive=True)
+        observer.start()
+
     '''loading_time = 0
     loading = Loading(n_ill, name=name, level=level, composer=composer, charter=charter, illustrator=illustrator, tip=tip)
     ending: Ending = None'''
     while True:
-        clock.tick()
+        while not stop:
+            clock.tick()
 
-        for event in pygame.event.get():
-            """if event.type == pygame.MOUSEMOTION:
-                pos = list(event.pos)
-                pos[1] = WINDOW_HEIGHT - pos[1]
-                print(pos)"""
-            if ui_state == States.Playing:
-                if not AUTOPLAY:
-                    if event.type == pygame.KEYDOWN:
-                        print(event.unicode)
-                        keys.append(event.unicode)
-                        if format == 'rpe':
-                            now_time = time.time() - start_time - offset
-                            bpm = update_bpm(bpm_list, now_time)
-                            t = 9999999
-                            n = None
-                            rt = 9999999
-                            rn = None
-                            for line in lines:
-                                nt, nn, nrt, nrn = line.note_judge(now_time)
-                                if nt < t and abs(nt) <= 0.18:
-                                    t = nt
-                                    n = nn
-                                if nrt < rt and abs(nrt) <= 0.08:
-                                    rt = nrt
-                                    rn = nrn
-                            if t != 9999999:
-                                if not (not rn is None and (abs(t)>0.08)):
-                                    debug(f"{t if t < 0 else f"+{t}"} | {'perfect' if abs(t) <= 0.08 else ('good' if abs(t) <= 0.16 else 'bad')}")
-                                    n.judge(t, now_time)
-                                    for line in lines:
-                                        line.update_hold(now_time, bpm, keys)
-                                        line.update_note(now_time, keys)
-                                elif not rn is None:
-                                    rn.judge_dfn = True
-                                    debug(f"defend by {"flick" if rn.type == 3 else "drag"}")
-                            n = None
-                            rn = None
-                    if event.type == pygame.KEYUP:
-                        try:
-                            keys.remove(event.unicode)
-                        except:
-                            pass
-                if event.type == pygame.MOUSEWHEEL:
-                    if pause:
-                        y_st += event.y * 0.5
-                    else:
-                        start_time += event.y * 0.5
-                    music.set_pos(time.time() - start_time)
-                if event.type == pygame.KEYDOWN:
-                    if event.unicode == " ":
-                        pause = not pause
+            for event in pygame.event.get():
+                """if event.type == pygame.MOUSEMOTION:
+                    pos = list(event.pos)
+                    pos[1] = WINDOW_HEIGHT - pos[1]
+                    print(pos)"""
+                if ui_state == States.Playing:
+                    if not AUTOPLAY:
+                        if event.type == pygame.KEYDOWN:
+                            keys.append(event.unicode)
+                            if format == 'rpe':
+                                now_time = time.time() - start_time - offset
+                                bpm = update_bpm(bpm_list, now_time)
+                                t = 9999999
+                                n = None
+                                rt = 9999999
+                                rn = None
+                                for line in lines:
+                                    nt, nn, nrt, nrn = line.note_judge(now_time)
+                                    if nt < t and abs(nt) <= 0.18:
+                                        t = nt
+                                        n = nn
+                                    if nrt < rt and abs(nrt) <= 0.08:
+                                        rt = nrt
+                                        rn = nrn
+                                if t != 9999999:
+                                    if not (not rn is None and (abs(t)>0.08)):
+                                        debug(f"{t if t < 0 else f"+{t}"} | {'perfect' if abs(t) <= 0.08 else ('good' if abs(t) <= 0.16 else 'bad')}")
+                                        n.judge(t, now_time)
+                                        for line in lines:
+                                            line.update_hold(now_time, bpm, keys)
+                                            line.update_note(now_time, keys)
+                                    elif not rn is None:
+                                        rn.judge_dfn = True
+                                        debug(f"defend by {"flick" if rn.type == 3 else "drag"}")
+                                n = None
+                                rn = None
+                        if event.type == pygame.KEYUP:
+                            try:
+                                keys.remove(event.unicode)
+                            except:
+                                pass
+                    if event.type == pygame.MOUSEWHEEL:
                         if pause:
-                            pause_start_time = time.time()
-                            y_st = start_time 
-                            music.pause()
+                            y_st += event.y * 0.5
                         else:
-                            start_time = y_st + (time.time() - pause_start_time)
-                            music.unpause()
-                            music.set_pos(time.time() - start_time)
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+                            start_time += event.y * 0.5
+                        music.set_pos(time.time() - start_time)
+                    if event.type == pygame.KEYDOWN:
+                        if event.unicode == " ":
+                            pause = not pause
+                            if pause:
+                                pause_start_time = time.time()
+                                y_st = start_time 
+                                music.pause()
+                            else:
+                                start_time = y_st + (time.time() - pause_start_time)
+                                music.unpause()
+                                music.set_pos(time.time() - start_time)
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
 
-        glClear(GL_COLOR_BUFFER_BIT)
+            glClear(GL_COLOR_BUFFER_BIT)
 
-        draw_texture(illustration, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 1, 1, 0, 1, (0.5,0.5), (1,1,1), xoffset=X_OFFSET)
-        draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,0.5,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
-        draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,bg_alpha,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
+            draw_texture(illustration, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 1, 1, 0, 1, (0.5,0.5), (1,1,1), xoffset=X_OFFSET)
+            draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,0.5,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
+            draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,bg_alpha,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
 
-        match ui_state:
-            case 1:
-                pass
-                '''if loading.update():
-                    loading = None
-                    music.play()
-                    _t = - offset
-                    start_time = time.time()
-                    pause = False
-                    pause_start_time = time.time()
-                    y_st = time.time()
-                    ui_state = States.Playing
-                else:
-                    loading.draw()'''
+            match ui_state:
+                case 1:
+                    pass
+                    '''if loading.update():
+                        loading = None
+                        music.play()
+                        _t = - offset
+                        start_time = time.time()
+                        pause = False
+                        pause_start_time = time.time()
+                        y_st = time.time()
+                        ui_state = States.Playing
+                    else:
+                        loading.draw()'''
 
-            case 2:
-                if pause:
-                    start_time = y_st + (time.time() - pause_start_time)
-                now_time = time.time() - start_time - offset
+                case 2:
+                    if pause:
+                        start_time = y_st + (time.time() - pause_start_time)
+                    now_time = time.time() - start_time - offset
 
-                if now_time >= _t:
-                    debug(f"FPS | {round(clock.get_fps())}")
-                    _t += 1
+                    if now_time >= _t:
+                        debug(f"FPS | {round(clock.get_fps())}")
+                        _t += 1
 
-                if format == "phi":
-                    phi_update(now_time)
-                elif format == "rpe":
-                    rpe_update(now_time)
+                    if format == "phi":
+                        phi_update(now_time)
+                    elif format == "rpe":
+                        rpe_update(now_time)
 
-                update_ui()
-                draw_ui(now_time)
+                    update_ui()
+                    draw_ui(now_time)
 
-                if W_LIMIT:
-                    draw_texture(illustration, 0, -rill_yfs, 1, 1, 0, 1, (rill_xfs,0), (1,1,1), clip=((rill_xfs,0),(rill_clip+rill_xfs,0),(rill_clip+rill_xfs,1),(rill_xfs,1)))
-                    draw_texture(illustration, REAL_WIDTH, -rill_yfs, 1, 1, 0, 1, (1-rill_xfs,0), (1,1,1), clip=((1-rill_clip-rill_xfs,0),(1-rill_xfs,0),(1-rill_xfs,1),(1-rill_clip-rill_xfs,1)))
-                    draw_rect(0,0,X_OFFSET,REAL_HEIGHT,0,0.7,(0,0),(0.1,0.1,0.1))
-                    draw_rect(REAL_WIDTH,0,X_OFFSET,REAL_HEIGHT,0,0.7,(1,0),(0.1,0.1,0.1))
+                    if W_LIMIT:
+                        draw_texture(illustration, 0, -rill_yfs, 1, 1, 0, 1, (rill_xfs,0), (1,1,1), clip=((rill_xfs,0),(rill_clip+rill_xfs,0),(rill_clip+rill_xfs,1),(rill_xfs,1)))
+                        draw_texture(illustration, REAL_WIDTH, -rill_yfs, 1, 1, 0, 1, (1-rill_xfs,0), (1,1,1), clip=((1-rill_clip-rill_xfs,0),(1-rill_xfs,0),(1-rill_xfs,1),(1-rill_clip-rill_xfs,1)))
+                        draw_rect(0,0,X_OFFSET,REAL_HEIGHT,0,0.7,(0,0),(0.1,0.1,0.1))
+                        draw_rect(REAL_WIDTH,0,X_OFFSET,REAL_HEIGHT,0,0.7,(1,0),(0.1,0.1,0.1))
 
-                '''if now_time + offset > music_length:
-                    lines.clear()
-                    music.stop()
-                    ending = Ending(n_ill, name, level)
-                    ui_state = States.Ending'''
+                    '''if now_time + offset > music_length:
+                        lines.clear()
+                        music.stop()
+                        ending = Ending(n_ill, name, level)
+                        ui_state = States.Ending'''
 
-            case 3:
-                pass
-                '''ending.update()
-                ending.draw()'''
+                case 3:
+                    pass
+                    '''ending.update()
+                    ending.draw()'''
 
-        pygame.display.flip()
+            pygame.display.flip()
 else:
     ispreview = "--preview" in sys.argv
     pygame.display.set_caption("PREVIEW" if ispreview else CAPTION)
@@ -396,6 +448,9 @@ else:
     delta = 1 / fps
     bitrate = int(get_value("bitrate", 15000))
     hitsound.summon(chart, music_path, ".\\sound.mp3", format, path)
+    if iszip:
+        import shutil
+        shutil.rmtree(f".\\.temp\\{r}")
     ffmpeg_command = [
         "ffmpeg", "-y", "-f", "rawvideo", "-vcodec", "rawvideo", "-s", f"{REAL_WIDTH}x{REAL_HEIGHT}", "-pix_fmt", "rgb24",
         "-r", str(fps), "-i", "-", "-i", ".\\sound.mp3", "-c:v", "libx264", "-b:v", f"{bitrate}k", "-pix_fmt", "yuv420p",

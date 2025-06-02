@@ -267,6 +267,7 @@ class Note:
                 self.x = linex + math.cos(math.radians(linerot)) * self.x_position
                 self.y = liney + math.sin(math.radians(linerot)) * self.x_position
                 if self.judgeed == False:
+                    self.judgeed = True
                     data.judges.perfect += 1
                     data.judges.combo += 1
                 return True
@@ -301,7 +302,7 @@ class Hit:
         self.p = 0
         self.hit_i = 0
         self.rot = tuple(math.radians(random.uniform(0, 360)) for i in range(4))
-        self.distance = tuple(random.uniform(125, 155) * WIDTH_SCALE for i in range(4))
+        self.distance = tuple(random.uniform(130, 160) * WIDTH_SCALE for i in range(4))
 
     def update(self, time):
         self.now_time = time - self.start_time

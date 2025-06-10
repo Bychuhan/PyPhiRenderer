@@ -1,6 +1,6 @@
 import sys, pygame, locale, os
-from func import *
 from json import loads
+from func import *
 pygame.init()
 
 VERSION = '0.0.1.2'
@@ -11,6 +11,7 @@ REAL_HEIGHT = int(get_value("height", 900 * SCRAEEN_SCALE))
 W_LIMIT = (REAL_WIDTH/REAL_HEIGHT) > (ASPECT_RATIO[0]/ASPECT_RATIO[1])
 WINDOW_WIDTH = (REAL_HEIGHT*(ASPECT_RATIO[0]/ASPECT_RATIO[1]) if W_LIMIT else REAL_WIDTH)
 WINDOW_HEIGHT = REAL_HEIGHT
+RESOURCE_PATH = get_value("resource", ".\\Resources")
 X_OFFSET = ((REAL_WIDTH-WINDOW_WIDTH)/2 if W_LIMIT else 0)
 LINE_WIDTH = 5.76 * WINDOW_HEIGHT
 LINE_HEIGHT = 0.0075 * WINDOW_HEIGHT
@@ -29,12 +30,12 @@ HIT_SCALE = HIT_WIDTH / 256
 PARTICLE_COLOR = HIT_COLOR
 WIDTH_SCALE = WINDOW_WIDTH / 800
 HEIGHT_SCALE = WINDOW_HEIGHT / 600
-PARTICLE_SIZE = 18 * WIDTH_SCALE
+PARTICLE_SIZE = 17.5 * WIDTH_SCALE
 RPE_LINE_WIDTH = WINDOW_WIDTH * (4000 / 1350)
 RPE_LINE_HEIGHT = WINDOW_HEIGHT * (5 / 900)
 LINE_COLOR_GOOD = (0.6353, 0.9333, 1)
 FONT_SIZE = 75
-FONT = pygame.font.Font(".\\Resources\\fonts\\font.ttf", FONT_SIZE)
+FONT = pygame.font.Font(f"{RESOURCE_PATH}\\fonts\\font.ttf", FONT_SIZE)
 TEXT_HEIGHT = WINDOW_HEIGHT * 0.0484#0.0555
 TEXT_SCALE = TEXT_HEIGHT / FONT_SIZE
 if "--render" in sys.argv:
@@ -47,7 +48,6 @@ RPE_TEXT_COLOR = [1, 1, 1]
 CAPTION = "PyPhiRenderer"
 LAUNCHER_WIDTH = int(get_value("width", 1200 * SCRAEEN_SCALE))
 LAUNCHER_HEIGHT = int(get_value("height", 900 * SCRAEEN_SCALE))
-RESOURCE_PATH = get_value("resource", ".\\Resources")
 LANGUAGE = ("zh_CN" if locale.getdefaultlocale()[0] not in os.listdir(".\\locales\\") else locale.getdefaultlocale()[0])
 _locales = {}
 for i in os.listdir(f".\\locales\\{LANGUAGE}\\"):

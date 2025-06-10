@@ -1,15 +1,18 @@
+from OpenGL import error
 import pygame
 from func import *
 from const import *
+import log
 pygame.init()
 
 class Text:
-    def __init__(self, text: str, font: pygame.font.Font, maxwidth = 999999):
+    def __init__(self, text: str, font: pygame.font.Font, maxwidth = 999999, letter_spacing=0):
         self.text = None
         self.font = font
         self.texture = None
         self.w = 0
         self.h = 0
+        self.letter_spacing = letter_spacing
         self.change_text(text)
         self.attach_line = None
         self.maxwidth = maxwidth
@@ -32,7 +35,19 @@ class Text:
         if self.text != text:
             if self.texture is not None:
                 glDeleteTextures(1, [self.texture.texture_id])
-            text_img = self.font.render(text, True, (255,255,255))
+            w = -self.letter_spacing
+            for char in text:
+                w += self.font.size(char)[0]+self.letter_spacing
+            text_img = pygame.Surface((max(0, w), self.font.size(text)[1]), pygame.SRCALPHA)
+            x = 0
+            for char in text:
+                char_surface = self.font.render(char, True, (255, 255, 255))
+                text_img.blit(char_surface, (x, 0))
+                x += char_surface.get_width() + self.letter_spacing
             self.w, self.h = text_img.get_size()
             self.text = text
-            self.texture = Texture.from_bytes_with_wh("RGBA", pygame.image.tobytes(text_img, "RGBA"), self.w, self.h)
+            try:
+                self.texture = Texture.from_bytes_with_wh("RGBA", pygame.image.tobytes(text_img, "RGBA"), self.w, self.h)
+            except error.GLError:
+                log.error("Text 纹理过大")
+                self.texture = Texture.from_bytes_with_wh("RGBA", pygame.image.tobytes(pygame.Surface((0,0), pygame.SRCALPHA), "RGBA"), 0, 0)

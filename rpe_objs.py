@@ -203,6 +203,31 @@ def init_speed_event(event, bpmlist, bpmfactor):
         event[en] = s
         en += 1
 
+def init_contorl_event(event: list, keyname):
+    # 我也没想到是向后填充。。
+    _e = event.copy()
+    _e.sort(key=lambda x: x["x"])
+    _e = _e[::-1]
+    for i in _e:
+        i["x"] = i["x"] / 900 * WINDOW_HEIGHT
+        i["start"] = i[keyname]
+        if i["easing"] < 0 or i["easing"] > 29:
+            i["easing"] = 0
+    for i in enumerate(_e):
+        if i[0] == 0:
+            i[1]["endx"] = i[1]["x"]
+            i[1]["end"] = i[1]["start"]
+            i[1]["x"] = i[1]["x"] + 9999999
+        else:
+            i[1]["endx"] = i[1]["x"]
+            i[1]["x"] = _e[i[0]-1]["endx"]
+            i[1]["end"] = i[1]["start"]
+            i[1]["start"] = _e[i[0]-1]["end"]
+        _e[i[0]] = i[1]
+    if _e[-1]["x"] > -9999999:
+        _e.append({"x": _e[-1]["x"], "endx": -9999999, "start": _e[-1]["end"], "end": _e[-1]["end"], "easing": 0})
+    return _e
+
 def get_floorposition(speedevents, time):
     _fp = 0
     for n in speedevents:
@@ -230,7 +255,7 @@ class JudgeLine:
         self.text_events = []
         self.ispen = False
         self.text = None
-        self.color = list(LINE_COLOR)
+        self.color = LINE_COLOR
         if "extended" in data:
             if "scaleXEvents" in data["extended"]:
                 self.scalex_events = data["extended"]["scaleXEvents"]
@@ -241,6 +266,7 @@ class JudgeLine:
             if "paintEvents" in data["extended"]:
                 self.paint_events = data["extended"]["paintEvents"]
                 self.ispen = True
+                self.color = (1, 1, 1)
             if "textEvents" in data["extended"]:
                 self.text_events = data["extended"]["textEvents"]
                 self.text = Text("", FONT)
@@ -304,6 +330,8 @@ class JudgeLine:
         self.scale_on_notes = (data["scaleOnNotes"] if "scaleOnNotes" in data else 0)
         self.n_notes = []
         self.note_holds = []
+        self.alpha_control = data["alphaControl"]
+        self.y_control = data["yControl"]
         self.preload()
 
     def preload(self):
@@ -319,6 +347,8 @@ class JudgeLine:
             self.speed_events.append([])
         init_speed_event(self.speed_events, self.bpm_list, self.bpm_factor)
         init_text_event(self.text_events, self.bpm_list, self.bpm_factor)
+        self.alpha_control = init_contorl_event(self.alpha_control, 'alpha')
+        self.y_control = init_contorl_event(self.y_control, 'y')
         n = 0
         a = len(self.notes)
         for i in self.notes:
@@ -389,12 +419,10 @@ class JudgeLine:
         for i in self.notes:
             i["hitsound_path"] = (i["hitsound"] if "hitsound" in i else None)
             i["hitsound"] = (NOTE_HITSOUNDS[i["hitsound"]] if "hitsound" in i else NOTE_SOUNDS[i["type"]-1])
-        self.n_notes = [Note(data) for data in self.notes if data["type"] != 2]
-        self.note_holds = [Note(data) for data in self.notes if data["type"] == 2]
-        print(self.note_holds)
+        self.n_notes = [Note(data, self.alpha_control, self.y_control) for data in self.notes if data["type"] != 2]
+        self.note_holds = [Note(data, self.alpha_control, self.y_control) for data in self.notes if data["type"] == 2]
         self.n_notes = self.note_sort(self.n_notes)
         self.note_holds = self.note_sort(self.note_holds)
-        print(self.note_holds)
         self.inote = len(self.n_notes) > 0 or len(self.note_holds) > 0
 
     def update_note(self, time, keys):
@@ -682,7 +710,8 @@ class JudgeLine:
                             d = math.sqrt((px-dx)**2+(py-dy)**2)
                             r = math.degrees(math.atan2(dy-py, dx-px))
                             draw_rect(px, py, d, self.pen_pos[i]["size"] * 2, r, self.pen_pos[i]["a"], (0, 0.5), self.pen_pos[i]["color"], xoffset = X_OFFSET)
-                            draw_circle(self.pen_pos[i]["x"],self.pen_pos[i]["y"], self.pen_pos[i]["size"], self.pen_pos[i]["a"], self.pen_pos[i]["color"])
+                            #draw_circle(self.pen_pos[i]["x"],self.pen_pos[i]["y"], self.pen_pos[i]["size"], self.pen_pos[i]["a"], self.pen_pos[i]["color"])
+                            #draw_line(self.pen_pos[i]['x'], self.pen_pos[i]['y'], self.pen_pos[i+1]['x'], self.pen_pos[i+1]['y'], 1, (*self.pen_pos[i]['color'], self.pen_pos[i]['a']))
                     l = len(self.pen_pos)-1
                     draw_circle(self.pen_pos[l]["x"],self.pen_pos[l]["y"], self.pen_pos[l]["size"], self.pen_pos[l]["a"], self.pen_pos[l]["color"])
         elif self.istexture:
@@ -696,7 +725,7 @@ class JudgeLine:
                 draw_rect(self.x, self.y, RPE_LINE_WIDTH * self.scalex, RPE_LINE_HEIGHT * self.scaley, self.r, self.a, self.anchor, self.color, xoffset = X_OFFSET)
 
 class Note:
-    def __init__(self, data: dict):
+    def __init__(self, data: dict, acontrol: dict, ycontrol: list):
         self.floor_position = data["fp"]
         self.end_fp = data["endfp"]
         self.now_fp = data["fp"]
@@ -727,12 +756,12 @@ class Note:
         self.is_fake = data["isFake"]
         self.size = data["size"]
         self.visible_time = data["visibleTime"]
-        self.y_offset = data["yOffset"]
+        self.y_offset_n = data["yOffset"]
         self.play_hit = False
         self.tint = data["tint"]
         self.tint_hit = data["tintHitEffects"]
         self.hitsound: directSound = data["hitsound"]
-        self.y_offset = self.y_offset * self.speed * self.is_above
+        self.y_offset = self.y_offset_n * self.speed * self.is_above
         self.update_break = False
         # Judge ↓
         self.judge_type = -1
@@ -741,6 +770,24 @@ class Note:
         self.is_miss = False
         self.pre_judge = False
         self.judge_dfn = False
+        # Control ↓
+        self.alpha_control = acontrol
+        self.acontrol_a = 1
+        self.acontrol_index = 0
+        self.y_control = ycontrol
+        self.ycontrol_y = 1
+        self.ycontrol_index = 0
+
+    def update_control(self, event: list, y, index):
+        _i = index
+        if y > event[_i]["endx"]:
+            return event[_i]["start"] + (event[_i]["end"] - event[_i]["start"]) * rpe_easings[event[_i]["easing"]]((event[_i]["x"] - y) / (event[_i]["x"] - event[_i]["endx"])), _i
+        else:
+            if _i < len(event)-1:
+                _i += 1
+                return self.update_control(event, y, _i)
+            else:
+                return event[0]["end"], _i
 
     def update(self, time, linex, liney, linerot, cfp, render_note, bpm, iscover, scale_on_notes, scalex, keys=[]):
         self.update_break = False
@@ -862,11 +909,17 @@ class Note:
 
         self.x = linex + math.cos(math.radians(linerot)) * (self.x_position)
         self.y = liney + math.sin(math.radians(linerot)) * (self.x_position)
+        if self.y_control:
+            self.ycontrol_y, self.ycontrol_index = self.update_control(self.y_control, self.now_fp + self.y_offset_n, self.ycontrol_index)
         if self.type == 2:
-            self.endx = self.x + math.cos(math.radians(linerot + 90)) * (self.end_r_fp + self.y_offset)
-            self.endy = self.y + math.sin(math.radians(linerot + 90)) * (self.end_r_fp + self.y_offset)
-        self.x += math.cos(math.radians(linerot + 90)) * (self.r_fp + self.y_offset)
-        self.y += math.sin(math.radians(linerot + 90)) * (self.r_fp + self.y_offset)
+            _l = self.end_r_fp - self.r_fp
+            self.endx = self.x + math.cos(math.radians(linerot + 90)) * ((self.r_fp + self.y_offset) * self.ycontrol_y + _l)
+            self.endy = self.y + math.sin(math.radians(linerot + 90)) * ((self.r_fp + self.y_offset) * self.ycontrol_y + _l)
+        self.x += math.cos(math.radians(linerot + 90)) * ((self.r_fp + self.y_offset) * self.ycontrol_y)
+        self.y += math.sin(math.radians(linerot + 90)) * ((self.r_fp + self.y_offset) * self.ycontrol_y)
+
+        if self.alpha_control:
+            self.acontrol_a, self.acontrol_index = self.update_control(self.alpha_control, self.now_fp + self.y_offset_n, self.acontrol_index)
 
         if self.type == 2:
             x1 = self.x-WINDOW_WIDTH/2
@@ -896,11 +949,11 @@ class Note:
             if not ((-NOTE_WIDTH <= self.x <= WINDOW_WIDTH + NOTE_WIDTH) and (-NOTE_WIDTH <= self.y <= WINDOW_HEIGHT + NOTE_WIDTH)):
                 return
 
-        if (math.ceil((self.end_r_fp * self.is_above * self.speed + self.y_offset if self.type == 2 else self.r_fp * self.is_above * self.speed + self.y_offset)) < 0 and iscover and (time <= self.time)):
-            return
-        if time < self.visible_time:
+        if (math.ceil((self.now_end_fp + self.y_offset_n if self.type == 2 else self.now_fp + self.y_offset_n)) < 0 and iscover and (time <= self.time)):
             return
         if not render_note:
+            return
+        if time < self.visible_time:
             return
         self.draw(self.x, self.y, self.endx, self.endy, linerot, scale_on_notes, scalex, time)
 
@@ -965,24 +1018,24 @@ class Note:
                 if self.type == 2:
                     clip = self.get_xclip(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], self.x_position, xmin, xmax, self.scale * scale)
                     if not clip is None:
-                        draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, self.scale * scale, self.yscale * self.length * self.speed * self.is_above, rot, self.alpha * (0.5 if self.is_miss else 1), (0.5,0), self.tint, clip, xoffset = X_OFFSET)
+                        draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, self.scale * scale, self.yscale * self.length * self.speed * self.is_above, rot, self.alpha * (0.5 if self.is_miss else 1) * self.acontrol_a, (0.5,0), self.tint, clip, xoffset = X_OFFSET)
                     if time < self.time:
                         if not clip is None:
-                            draw_texture(NOTE_TEXTURES[4 + self.is_hl * 6], x, y, self.scale * scale, self.scale * self.is_above, rot, self.alpha, (0.5,1), self.tint, clip, xoffset = X_OFFSET)
+                            draw_texture(NOTE_TEXTURES[4 + self.is_hl * 6], x, y, self.scale * scale, self.scale * self.is_above, rot, self.alpha * self.acontrol_a, (0.5,1), self.tint, clip, xoffset = X_OFFSET)
                     if not clip is None:
-                        draw_texture(NOTE_TEXTURES[5 + self.is_hl * 6], endx, endy, NOTE_SCALE * scale, NOTE_SCALE * self.is_above, rot, self.alpha * (0.5 if self.is_miss else 1), (0.5,0), self.tint, clip, xoffset = X_OFFSET)
+                        draw_texture(NOTE_TEXTURES[5 + self.is_hl * 6], endx, endy, NOTE_SCALE * scale, NOTE_SCALE * self.is_above, rot, self.alpha * (0.5 if self.is_miss else 1) * self.acontrol_a, (0.5,0), self.tint, clip, xoffset = X_OFFSET)
                 else:
                     clip = self.get_xclip(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], self.x_position, xmin, xmax, NOTE_SCALE * scale)
                     if not clip is None:
-                        draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, NOTE_SCALE * scale, NOTE_SCALE, rot, self.alpha * a, (0.5,0.5), self.tint, clip, xoffset = X_OFFSET)
+                        draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, NOTE_SCALE * scale, NOTE_SCALE, rot, self.alpha * a * self.acontrol_a, (0.5,0.5), self.tint, clip, xoffset = X_OFFSET)
             else:
                 if self.type == 2:
-                    draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, self.scale * scale, self.yscale * self.length * self.speed * self.is_above, rot, self.alpha * (0.5 if self.is_miss else 1), (0.5,0), self.tint, xoffset = X_OFFSET)
+                    draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, self.scale * scale, self.yscale * self.length * self.speed * self.is_above, rot, self.alpha * (0.5 if self.is_miss else 1) * self.acontrol_a, (0.5,0), self.tint, xoffset = X_OFFSET)
                     if time < self.time:
-                        draw_texture(NOTE_TEXTURES[4 + self.is_hl * 6], x, y, self.scale * scale, self.scale * self.is_above, rot, self.alpha, (0.5,1), self.tint, xoffset = X_OFFSET)
-                    draw_texture(NOTE_TEXTURES[5 + self.is_hl * 6], endx, endy, NOTE_SCALE * scale, NOTE_SCALE * self.is_above, rot, self.alpha * (0.5 if self.is_miss else 1), (0.5,0), self.tint, xoffset = X_OFFSET)
+                        draw_texture(NOTE_TEXTURES[4 + self.is_hl * 6], x, y, self.scale * scale, self.scale * self.is_above, rot, self.alpha * self.acontrol_a, (0.5,1), self.tint, xoffset = X_OFFSET)
+                    draw_texture(NOTE_TEXTURES[5 + self.is_hl * 6], endx, endy, NOTE_SCALE * scale, NOTE_SCALE * self.is_above, rot, self.alpha * (0.5 if self.is_miss else 1) * self.acontrol_a, (0.5,0), self.tint, xoffset = X_OFFSET)
                 else:
-                    draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, NOTE_SCALE * scale, NOTE_SCALE, rot, self.alpha * a, (0.5,0.5), self.tint, xoffset = X_OFFSET)
+                    draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], x, y, NOTE_SCALE * scale, NOTE_SCALE, rot, self.alpha * a * self.acontrol_a, (0.5,0.5), self.tint, xoffset = X_OFFSET)
 
 class Hit:
     def __init__(self, x, y, startTime, color):
@@ -993,7 +1046,7 @@ class Hit:
         self.p = 0
         self.hit_i = 0
         self.rot = tuple(math.radians(random.uniform(0, 360)) for i in range(4))
-        self.distance = tuple(random.uniform(130, 160) * WIDTH_SCALE for i in range(4))
+        self.distance = tuple(random.uniform(135, 165) * WIDTH_SCALE for i in range(4))
         self.color = color
 
     def update(self, time):

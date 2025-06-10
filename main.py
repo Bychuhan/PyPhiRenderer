@@ -1,4 +1,4 @@
-import pygame, data, sys, subprocess, tqdm, err_hook, math, time, os, win32gui, atexit
+import pygame, data, sys, subprocess, tqdm, err_hook, math, time, os, win32gui, importlib #, atexit
 from pygame.locals import DOUBLEBUF, OPENGL, SRCALPHA
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -10,8 +10,8 @@ from texture import *
 from PIL import Image, ImageFilter
 from log import *
 from states import *
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+#from watchdog.observers import Observer
+#from watchdog.events import FileSystemEventHandler
 '''from ending import *
 from loading import *'''
 
@@ -43,37 +43,37 @@ win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, ex_style)
 win32gui.SetLayeredWindowAttributes(hwnd, win32api.RGB(0, 0, 0), 1, win32con.LWA_COLORKEY)'''
 
 # tchart
-class TChart(FileSystemEventHandler):
+'''class TChart(FileSystemEventHandler):
     def on_modified(self, event):
         if os.path.exists(event.src_path):
-            time.sleep(0.2)
-            if os.path.samefile(chart_path, event.src_path):
-                global pause, pause_start_time, y_st, music, start_time, now_time, lines, stop
-                stop = True
-                lines.clear()
-                music.stop()
-                data.judges = data.Judge(0, 0, 0, 0, 0, 0, 0, 1, 2)
-                info("Reloading chart...")
-                load_chart(chart_path)
-                info(f"Loaded chart | {chart_path}")
-                music.play()
-                start_time = time.time()
-                now_time = 0.
-                stop = False
-            if os.path.samefile(music_path, event.src_path):
-                global music_length, offset
-                stop = True
-                music.stop()
-                info("Reloading music...")
-                try:
-                    music.load(music_path)
-                except:
-                    error_and_exit_no_tip("音乐加载失败")
-                music_length = music.get_length()
-                music.play()
-                music.set_pos(now_time + offset)
-                info(f"Loaded music | {music_path}")
-                stop = False
+            if os.path.splitext(event.src_path)[1] != '.tmp':
+                if os.path.samefile(chart_path, event.src_path):
+                    global pause, pause_start_time, y_st, music, start_time, now_time, lines, stop
+                    stop = True
+                    lines.clear()
+                    music.stop()
+                    data.judges = data.Judge(0, 0, 0, 0, 0, 0, 0, 1, 2)
+                    info("Reloading chart...")
+                    load_chart(chart_path)
+                    info(f"Loaded chart | {chart_path}")
+                    music.play()
+                    start_time = time.time()
+                    now_time = 0.
+                    stop = False
+                if os.path.samefile(music_path, event.src_path):
+                    global music_length, offset
+                    stop = True
+                    music.stop()
+                    info("Reloading music...")
+                    try:
+                        music.load(music_path)
+                    except:
+                        error_and_exit_no_tip("音乐加载失败")
+                    music_length = music.get_length()
+                    music.play()
+                    music.set_pos(now_time + offset)
+                    info(f"Loaded music | {music_path}")
+                    stop = False'''
 
 if "--render" in sys.argv and "--preview" not in sys.argv:
     win32gui.ShowWindow(hwnd, False)
@@ -302,7 +302,7 @@ if "--render" not in sys.argv:
     pause_start_time = time.time()
     y_st = time.time()
 
-    if not iszip:
+    '''if not iszip:
         def clean():
             observer.stop()
             observer.join()
@@ -312,7 +312,7 @@ if "--render" not in sys.argv:
         event_handler = TChart()
         observer = Observer()
         observer.schedule(event_handler, path, recursive=True)
-        observer.start()
+        observer.start()'''
 
     '''loading_time = 0
     loading = Loading(n_ill, name=name, level=level, composer=composer, charter=charter, illustrator=illustrator, tip=tip)
@@ -442,12 +442,20 @@ if "--render" not in sys.argv:
 else:
     ispreview = "--preview" in sys.argv
     pygame.display.set_caption("PREVIEW" if ispreview else CAPTION)
-    import hitsound
     fps = int(get_value("fps", 60))
     output = get_value("output", f"{time.strftime("%Y-%m-%d %H-%M-%S", time.localtime())} {name}_{level.split(" ")[0] if " Lv." in level or "  Lv." in level else level}.mp4")
     delta = 1 / fps
     bitrate = int(get_value("bitrate", 15000))
+    import hitsound
     hitsound.summon(chart, music_path, ".\\sound.mp3", format, path)
+
+    # TODO
+    #import hitsound
+    #import soundfile as sf
+    #import numpy as np
+    #audio, sr = hitsound.gen(music_path, chart, target_sr=48000, format=format, path=path)
+    #sf.write('.\\sound.wav', np.array(audio), sr, subtype="FLOAT")
+
     if iszip:
         import shutil
         shutil.rmtree(f".\\.temp\\{r}")

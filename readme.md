@@ -6,7 +6,7 @@
 - 部分代码参考了 [K0nGbawa/Re-PyPhiPlayer](https://github.com/K0nGbawa/Re-PyPhiPlayer/) 和 [qaqFei/phispler](https://github.com/qaqFei/phispler/)。
 
 ## 使用方法
-- 安装 `python` 。（推荐版本3.12.10，3.13往上音频渲染无法正常运行）
+- 安装 `python` 。
 - 首次使用前，点击文件资源管理器地址栏，输入 `cmd` ，在弹出的窗口中输入 `pip install -r requirements.txt` ，下载依赖库。
 - 双击 [`main.py`](main.py) 运行程序。
 
@@ -54,25 +54,10 @@
 
 - [ ] RPE
     - [x] BPMList
-    - [ ] META
-        - [x] RPEVersion
-        - [x] background
-        - [x] charter
-        - [x] composer
-        - [ ] duration
-        - [ ] id
-        - [x] illustration
-        - [x] level
-        - [x] name
-        - [x] offset
-        - [x] song
-    - [ ] chartTime (没用)
-    - [ ] judgeLineGroup (没用)
+    - [x] META
     - [ ] judgeLineList
-        - [ ] Group (没用)
-        - [ ] Name (没用)
         - [x] Texture
-        - [ ] alphaControl
+        - [x] alphaControl
         - [ ] posControl
         - [ ] sizeControl
         - [ ] skewControl
@@ -114,12 +99,8 @@
             - [ ] zIndexHitEffects
             - [x] tint
             - [x] tintHitEffects
-        - [ ] numOfNotes (没用)
         - [x] zOrder
         - [x] scaleOnNotes
-    - [ ] multiLineString (没用)
-    - [ ] multiScale (没用)
-    - [ ] timeTags (没用)
 
 - PEC
     - [ ] bp

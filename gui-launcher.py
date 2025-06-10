@@ -1,4 +1,4 @@
-import pygame, subprocess, win32gui, err_hook, time, requests, os
+import pygame, subprocess, win32gui, err_hook, time, requests, os, log
 from pygame.locals import DOUBLEBUF, OPENGL
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -57,8 +57,8 @@ music_path = ""
 ill_path = ""
 
 ### check update
-try:
-    update = requests.get('https://api.github.com/repos/Bychuhan/PyPhiRenderer/releases/latest', headers={'Accept-Language':'en-US'})
+'''try:
+    update = requests.get('https://api.github.com/repos/Bychuhan/PyPhiRenderer/releases/latest', headers={"Accept-Language":"en-US"})
     update = update.text
     update = json.loads(update)
     if f'v{VERSION}' != update['name']:
@@ -87,8 +87,12 @@ try:
             _download = update['assets'][0]['browser_download_url']
             import webbrowser
             webbrowser.open(_download)
-except requests.exceptions.SSLError:
+except requests.exceptions.SSLError as e:
+    log.error(e)
     pygame.display.message_box(LOCALES['update']['error'], LOCALES['update']['check-update-failed'], 'error', None, (LOCALES['update']['close'],), 0, 0)
+except requests.exceptions.ConnectionError as e:
+    log.error(e)
+    pygame.display.message_box(LOCALES['update']['error'], LOCALES['update']['check-update-failed'], 'error', None, (LOCALES['update']['close'],), 0, 0)'''
 ###
 
 

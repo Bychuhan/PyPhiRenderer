@@ -148,4 +148,4 @@ def is_intersection(midpoint, angle, width, height):
     x_bottom = (0 - intercept) / slope
     x_top = (height - intercept) / slope
     return (0 <= y_left <= height) or (0 <= y_right <= height) or (0 <= x_bottom <= width) or (0 <= x_top <= width)
-    # 这是kbw写的。关注B站空吧哇热门手法玩家谢谢喵
+    # 这是 kbw 写的。关注 B 站 K0nGbawa 谢谢喵

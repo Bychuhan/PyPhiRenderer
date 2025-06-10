@@ -2,7 +2,7 @@ keyboard==0.13.5
 Pillow==11.2.1
 pyautogui==0.9.54
 pydub==0.25.1
-pygame==2.6.1
+pygame-ce==2.5.4
 PyOpenGL==3.1.9
 pywebview==5.4
 pywin32==310

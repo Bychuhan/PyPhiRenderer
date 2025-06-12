@@ -86,6 +86,10 @@ def init_event(event, bpmlist, bpmfactor):
         if "easingType" in i:
             if i["easingType"] < 0 or i["easingType"] > 29:
                 i["easingType"] = 0
+        i["bezier"] = 0 if "bezier" not in i else i["bezier"]
+        i["bezier"] = True if i["bezier"] == 1 else False
+        if "bezierPoints" in i:
+            i["bezierPoints"] = [(i["bezierPoints"][0], i["bezierPoints"][1]), (i["bezierPoints"][0], i["bezierPoints"][1])]
 
 def init_movex_event(event, bpmlist, bpmfactor):
     for n in event:
@@ -565,7 +569,8 @@ class JudgeLine:
     def event_update(self, event, time, default):
         if time < event[0]["endTime"]:
             if time >= event[0]["startTime"]:
-                return event[0]["start"] + (event[0]["end"] - event[0]["start"]) * rpe_easings[event[0]["easingType"]]((time - event[0]["startTime"]) / (event[0]["endTime"] - event[0]["startTime"]))
+                __p = (time - event[0]["startTime"]) / (event[0]["endTime"] - event[0]["startTime"])
+                return event[0]["start"] + (event[0]["end"] - event[0]["start"]) * (bezier_get_y(__p, *event[0]["bezierPoints"]) if event[0]["bezier"] else rpe_easings[event[0]["easingType"]](__p))
             else:
                 return default
         else:
@@ -581,11 +586,12 @@ class JudgeLine:
     def colorevent_update(self, event, time, default):
         if time < event[0]["endTime"]:
             if time >= event[0]["startTime"]:
+                __p = (time - event[0]["startTime"]) / (event[0]["endTime"] - event[0]["startTime"])
                 sc = event[0]["start"].copy()
                 ec = event[0]["end"].copy()
-                sc[0] = sc[0] + (ec[0] - sc[0]) * rpe_easings[event[0]["easingType"]]((time - event[0]["startTime"]) / (event[0]["endTime"] - event[0]["startTime"]))
-                sc[1] = sc[1] + (ec[1] - sc[1]) * rpe_easings[event[0]["easingType"]]((time - event[0]["startTime"]) / (event[0]["endTime"] - event[0]["startTime"]))
-                sc[2] = sc[2] + (ec[2] - sc[2]) * rpe_easings[event[0]["easingType"]]((time - event[0]["startTime"]) / (event[0]["endTime"] - event[0]["startTime"]))
+                sc[0] = sc[0] + (ec[0] - sc[0]) * (bezier_get_y(__p, *event[0]["bezierPoints"]) if event[0]["bezier"] else rpe_easings[event[0]["easingType"]](__p))
+                sc[1] = sc[1] + (ec[1] - sc[1]) * (bezier_get_y(__p, *event[0]["bezierPoints"]) if event[0]["bezier"] else rpe_easings[event[0]["easingType"]](__p))
+                sc[2] = sc[2] + (ec[2] - sc[2]) * (bezier_get_y(__p, *event[0]["bezierPoints"]) if event[0]["bezier"] else rpe_easings[event[0]["easingType"]](__p))
                 return sc
             else:
                 return default
@@ -615,7 +621,8 @@ class JudgeLine:
                 if event[0]['type'] == 0:
                     return event[0]["start"]
                 elif event[0]['type'] == 1:
-                    return event[0]['t'][int((len(event[0]['t']) - 1) * rpe_easings[event[0]["easingType"]]((time - event[0]["startTime"]) / (event[0]["endTime"] - event[0]["startTime"])))]
+                    __p = (time - event[0]["startTime"]) / (event[0]["endTime"] - event[0]["startTime"])
+                    return event[0]['t'][int((len(event[0]['t']) - 1) * (bezier_get_y(__p, *event[0]["bezierPoints"]) if event[0]["bezier"] else rpe_easings[event[0]["easingType"]](__p)))]
                 else:
                     return event[0]['start']
             else:

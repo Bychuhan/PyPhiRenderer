@@ -288,7 +288,7 @@ class JudgeLine:
         self.a = 0
         self.scalex = 1
         self.scaley = 1
-        self.father_line = None
+        self.father_line: JudgeLine = None
         self.utime = 0
         if "father" in data:
             self.father = data["father"]
@@ -320,7 +320,7 @@ class JudgeLine:
         self.inote = False
         self.cfp = 0
         self.ufp = 0
-        self.hits = []
+        self.hits: list[Hit] = []
         self.attach_ui = -1
         if "attachUI" in data:
             self.attach_ui = data["attachUI"]
@@ -336,6 +336,7 @@ class JudgeLine:
         self.note_holds = []
         self.alpha_control = data["alphaControl"]
         self.y_control = data["yControl"]
+        self.rotate_with_father = (data["rotateWithFather"] if "rotateWithFather" in data else False) # 我们的饮水机终于学会了使用bool。
         self.preload()
 
     def preload(self):
@@ -425,8 +426,8 @@ class JudgeLine:
             i["hitsound"] = (NOTE_HITSOUNDS[i["hitsound"]] if "hitsound" in i else NOTE_SOUNDS[i["type"]-1])
         self.n_notes = [Note(data, self.alpha_control, self.y_control) for data in self.notes if data["type"] != 2]
         self.note_holds = [Note(data, self.alpha_control, self.y_control) for data in self.notes if data["type"] == 2]
-        self.n_notes = self.note_sort(self.n_notes)
-        self.note_holds = self.note_sort(self.note_holds)
+        self.n_notes: list[list[list[list[Note]]]] = self.note_sort(self.n_notes)
+        self.note_holds: list[list[list[list[Note]]]] = self.note_sort(self.note_holds)
         self.inote = len(self.n_notes) > 0 or len(self.note_holds) > 0
 
     def update_note(self, time, keys):
@@ -540,6 +541,8 @@ class JudgeLine:
                 self.y = fy + math.sin(math.radians(fr)) * yx
                 self.x += math.cos(math.radians(fr+90)) * yy
                 self.y += math.sin(math.radians(fr+90)) * yy
+                if self.rotate_with_father:
+                    self.r += fr
             self.x_cache = self.x
             self.y_cache = self.y
             self.r_cache = self.r
@@ -648,6 +651,11 @@ class JudgeLine:
             for i in self.movey_events:
                 if i:
                     self.y += self.event_update(i, time, 0)
+        self.r = 0
+        if self.rotate_events:
+            for i in self.rotate_events:
+                if i:
+                    self.r += self.event_update(i, time, 0)
         if self.father != -1:
             fx, fy, fr = self.father_line.get_pos(time, True)
             yx = self.x
@@ -656,11 +664,8 @@ class JudgeLine:
             self.y = fy + math.sin(math.radians(fr)) * yx
             self.x += math.cos(math.radians(fr+90)) * yy
             self.y += math.sin(math.radians(fr+90)) * yy
-        self.r = 0
-        if self.rotate_events:
-            for i in self.rotate_events:
-                if i:
-                    self.r += self.event_update(i, time, 0)
+            if self.rotate_with_father:
+                self.r += fr
         self.a = 0
         if self.alpha_events:
             for i in self.alpha_events:

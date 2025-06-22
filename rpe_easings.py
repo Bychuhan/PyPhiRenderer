@@ -43,7 +43,7 @@ def bezier_get_t(x, p0, p1, p2, p3, tolerance=1e-6):
     t_min, t_max = 0.0, 1.0
     while t_max - t_min > tolerance:
         t_mid = (t_min + t_max) / 2.0
-        x_mid, _ = bezier(t_mid, p0, p1, p2, p3)
+        x_mid = bezier(t_mid, p0, p1, p2, p3)[0]
         if x_mid < x:
             t_min = t_mid
         else:

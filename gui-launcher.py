@@ -1,4 +1,4 @@
-import pygame, subprocess, win32gui, err_hook, time, requests, os, log
+import pygame, subprocess, win32gui, err_hook, time, requests, os
 from pygame.locals import DOUBLEBUF, OPENGL
 from OpenGL.GL import *
 from OpenGL.GLU import *

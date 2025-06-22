@@ -100,6 +100,7 @@
             - [x] tint
             - [x] tintHitEffects
         - [x] zOrder
+        - [x] rotateWithFather
         - [x] scaleOnNotes
 
 - PEC

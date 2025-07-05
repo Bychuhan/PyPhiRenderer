@@ -61,7 +61,7 @@
         - [ ] posControl
         - [ ] sizeControl
         - [ ] skewControl
-        - [ ] yControl
+        - [x] yControl
         - [x] attachUI
         - [x] anchor
         - [x] bpmfactor

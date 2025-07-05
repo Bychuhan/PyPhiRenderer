@@ -1,5 +1,5 @@
-import pygame, data, sys, subprocess, tqdm, err_hook, math, time, os, win32gui, importlib #, atexit
-from pygame.locals import DOUBLEBUF, OPENGL, SRCALPHA
+import pygame, data, sys, subprocess, tqdm, err_hook, math, time, os, win32gui#, atexit
+from pygame.locals import DOUBLEBUF, OPENGL
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from const import *
@@ -16,7 +16,7 @@ from states import *
 from loading import *'''
 
 pygame.init()
-window = pygame.display.set_mode((REAL_WIDTH, REAL_HEIGHT), flags = DOUBLEBUF | OPENGL | SRCALPHA)
+pygame.display.set_mode((REAL_WIDTH, REAL_HEIGHT), flags = DOUBLEBUF | OPENGL) # 赋值给变量无意义，。，。，。，
 icon = pygame.image.load(".\\Resources\\icon.png")
 pygame.display.set_caption(CAPTION)
 pygame.display.set_icon(icon)

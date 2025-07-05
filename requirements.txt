@@ -1,11 +1,10 @@
 keyboard==0.13.5
-Pillow==11.2.1
+Pillow==11.3.0
 pyautogui==0.9.54
 pydub==0.25.1
-pygame-ce==2.5.4
+pygame-ce==2.5.5
 PyOpenGL==3.1.9
-pywebview==5.4
 pywin32==310
-Requests==2.32.3
+Requests==2.32.4
 PyYAML==6.0.2
 tqdm==4.67.1

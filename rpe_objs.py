@@ -737,7 +737,7 @@ class JudgeLine:
                 draw_rect(self.x, self.y, RPE_LINE_WIDTH * self.scalex, RPE_LINE_HEIGHT * self.scaley, self.r, self.a, self.anchor, self.color, xoffset = X_OFFSET)
 
 class Note:
-    def __init__(self, data: dict, acontrol: dict, ycontrol: list):
+    def __init__(self, data: dict, acontrol: list, ycontrol: list):
         self.floor_position = data["fp"]
         self.end_fp = data["endfp"]
         self.now_fp = data["fp"]

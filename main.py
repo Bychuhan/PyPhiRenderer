@@ -317,6 +317,7 @@ if "--render" not in sys.argv:
     '''loading_time = 0
     loading = Loading(n_ill, name=name, level=level, composer=composer, charter=charter, illustrator=illustrator, tip=tip)
     ending: Ending = None'''
+
     while True:
         while not stop:
             clock.tick()

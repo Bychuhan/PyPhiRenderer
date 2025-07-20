@@ -207,7 +207,7 @@ class Note:
         self.above: int = data["above"]
         self.now_fp: float = self.floor_position
         self.real_fp: float = self.floor_position * self.speed * self.above
-        self.length: float = SPEED_EVENT_H * self.hold_time * self.hold_speed
+        self.length: float = SPEED_EVENT_H * self.hold_time * self.hold_speed * self.above
         self.start_length: float = self.length
         self.is_click: bool = False
         self.summon_hit: bool = False
@@ -284,7 +284,7 @@ class Note:
 
     def draw(self) -> None:
         if self.type == 3:
-            draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], self.x, self.y, self.scale, self.yscale * self.length * self.above, self.r, 1, (0.5, 0))
+            draw_texture(NOTE_TEXTURES[self.type - 1 + self.is_hl * 6], self.x, self.y, self.scale, self.yscale * self.length, self.r, 1, (0.5, 0))
             if not self.is_click:
                 draw_texture(NOTE_TEXTURES[4 + self.is_hl * 6], self.x, self.y, self.scale, self.scale * self.above, self.r, 1, (0.5, 1))
             draw_texture(NOTE_TEXTURES[5 + self.is_hl * 6], self.endx, self.endy, NOTE_SCALE, NOTE_SCALE * self.above, self.r, 1, (0.5, 0))

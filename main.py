@@ -227,8 +227,8 @@ def draw_ui(time):
             continue
         text[0].render(text[1][0],text[1][1],text[2],text[2],0,1,text[3],(1,1,1), time)
     if pause_attach is None:
-        draw_rect(19.83 * HEIGHT_SCALE, 578.1 * HEIGHT_SCALE, 6.2 * HEIGHT_SCALE, 22 * HEIGHT_SCALE, 0, 1, (0,1), (1,1,1), xoffset=X_OFFSET)
-        draw_rect(32 * HEIGHT_SCALE, 578.1 * HEIGHT_SCALE, 6.2 * HEIGHT_SCALE, 22 * HEIGHT_SCALE, 0, 1, (0,1), (1,1,1), xoffset=X_OFFSET)
+        draw_rect(19.83 * HEIGHT_SCALE, 578.1 * HEIGHT_SCALE, 6.2 * HEIGHT_SCALE, 22 * HEIGHT_SCALE, 0, 1, (0,1), (1,1,1))
+        draw_rect(32 * HEIGHT_SCALE, 578.1 * HEIGHT_SCALE, 6.2 * HEIGHT_SCALE, 22 * HEIGHT_SCALE, 0, 1, (0,1), (1,1,1))
     else:
         lx, ly, lr, la, lsx, lsy, lc = pause_attach.get_data(time)
         _xs = 6.2 * HEIGHT_SCALE * lsx
@@ -238,23 +238,23 @@ def draw_ui(time):
         _2xt = (32 - 19.83) * HEIGHT_SCALE
         _2x = _x + math.cos(math.radians(lr)) * (_2xt * lsx)
         _2y = _y + math.sin(math.radians(lr)) * (_2xt * lsx)
-        draw_rect(_x, _y, _xs, _ys, lr, la, (0,1), lc, xoffset=X_OFFSET)
-        draw_rect(_2x, _2y,_xs, _ys, lr, la, (0,1), lc, xoffset=X_OFFSET)
+        draw_rect(_x, _y, _xs, _ys, lr, la, (0,1), lc)
+        draw_rect(_2x, _2y,_xs, _ys, lr, la, (0,1), lc)
     process = (time + offset) / music_length
     s = 0 - 6.3 * HEIGHT_SCALE / 2
     if bar_attach is None:
-        draw_rect(s + process * (WINDOW_WIDTH - s), WINDOW_HEIGHT, 2 * HEIGHT_SCALE, 6.3 * HEIGHT_SCALE, 0, 1, (0,1), (1,1,1), xoffset=X_OFFSET)
-        draw_rect(s, WINDOW_HEIGHT, process * (WINDOW_WIDTH - s), 6.3 * HEIGHT_SCALE, 0, 1, (0,1), (0.569, 0.569, 0.569), xoffset=X_OFFSET)
+        draw_rect(s + process * (WINDOW_WIDTH - s), WINDOW_HEIGHT, 2 * HEIGHT_SCALE, 6.3 * HEIGHT_SCALE, 0, 1, (0,1), (1,1,1))
+        draw_rect(s, WINDOW_HEIGHT, process * (WINDOW_WIDTH - s), 6.3 * HEIGHT_SCALE, 0, 1, (0,1), (0.569, 0.569, 0.569))
     else:
         lx, ly, lr, la, lsx, lsy, lc = bar_attach.get_data(time)
         process *= lsx
         _y = WINDOW_HEIGHT - 6.3 * HEIGHT_SCALE / 2 + ly
         _2x = (lx + s) + math.cos(math.radians(lr)) * (process * (WINDOW_WIDTH - s))
         _2y = _y + math.sin(math.radians(lr)) * (process * (WINDOW_WIDTH - s))
-        draw_rect(_2x, _2y, 2 * HEIGHT_SCALE, 6.3 * HEIGHT_SCALE * lsy, lr, la, (0,0.5), lc, xoffset=X_OFFSET)
-        draw_rect(lx + s, _y, process * (WINDOW_WIDTH - s), 6.3 * HEIGHT_SCALE * lsy, lr, la, (0,0.5), lc, xoffset=X_OFFSET)
+        draw_rect(_2x, _2y, 2 * HEIGHT_SCALE, 6.3 * HEIGHT_SCALE * lsy, lr, la, (0,0.5), lc)
+        draw_rect(lx + s, _y, process * (WINDOW_WIDTH - s), 6.3 * HEIGHT_SCALE * lsy, lr, la, (0,0.5), lc)
     if show_bar:
-        draw_rect(16.67 * HEIGHT_SCALE, 20 * HEIGHT_SCALE, 3.89 * HEIGHT_SCALE, 20 * HEIGHT_SCALE, 0, 1, (0, 0), (1, 1, 1), xoffset=X_OFFSET)
+        draw_rect(16.67 * HEIGHT_SCALE, 20 * HEIGHT_SCALE, 3.89 * HEIGHT_SCALE, 20 * HEIGHT_SCALE, 0, 1, (0, 0), (1, 1, 1))
 
 def phi_update(time):
     for line in lines:
@@ -386,9 +386,16 @@ if "--render" not in sys.argv:
 
             glClear(GL_COLOR_BUFFER_BIT)
 
-            draw_texture(illustration, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 1, 1, 0, 1, (0.5,0.5), (1,1,1), xoffset=X_OFFSET)
-            draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,0.5,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
-            draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,bg_alpha,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
+            if W_LIMIT:
+                glPushMatrix()
+                glTranslatef(X_OFFSET, 0, 0)
+
+            draw_texture(illustration, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 1, 1, 0, 1, (0.5,0.5), (1,1,1))
+            draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,0.5,(0.5,0.5),(0,0,0))
+            draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,bg_alpha,(0.5,0.5),(0,0,0))
+
+            if W_LIMIT:
+                glPopMatrix()
 
             match ui_state:
                 case 1:
@@ -414,6 +421,10 @@ if "--render" not in sys.argv:
                         debug(f"FPS | {round(clock.get_fps())}")
                         _t += 1
 
+                    if W_LIMIT:
+                        glPushMatrix()
+                        glTranslatef(X_OFFSET, 0, 0)
+
                     if format == "phi":
                         phi_update(now_time)
                     elif format == "rpe":
@@ -423,6 +434,7 @@ if "--render" not in sys.argv:
                     draw_ui(now_time)
 
                     if W_LIMIT:
+                        glPopMatrix()
                         draw_texture(illustration, 0, -rill_yfs, 1, 1, 0, 1, (rill_xfs,0), (1,1,1), clip=((rill_xfs,0),(rill_clip+rill_xfs,0),(rill_clip+rill_xfs,1),(rill_xfs,1)))
                         draw_texture(illustration, REAL_WIDTH, -rill_yfs, 1, 1, 0, 1, (1-rill_xfs,0), (1,1,1), clip=((1-rill_clip-rill_xfs,0),(1-rill_xfs,0),(1-rill_xfs,1),(1-rill_clip-rill_xfs,1)))
                         draw_rect(0,0,X_OFFSET,REAL_HEIGHT,0,0.7,(0,0),(0.1,0.1,0.1))
@@ -480,9 +492,13 @@ else:
 
         glClear(GL_COLOR_BUFFER_BIT)
 
-        draw_texture(illustration, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 1, 1, 0, 1, (0.5,0.5), (1,1,1), xoffset=X_OFFSET)
-        draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,0.5,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
-        draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,bg_alpha,(0.5,0.5),(0,0,0),xoffset=X_OFFSET)
+        if W_LIMIT:
+            glPushMatrix()
+            glTranslatef(X_OFFSET, 0, 0)
+
+        draw_texture(illustration, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 1, 1, 0, 1, (0.5,0.5), (1,1,1))
+        draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,0.5,(0.5,0.5),(0,0,0))
+        draw_rect(WINDOW_WIDTH/2,WINDOW_HEIGHT/2,WINDOW_WIDTH,WINDOW_HEIGHT,0,bg_alpha,(0.5,0.5),(0,0,0))
 
         if format == "phi":
             phi_update(now_time)
@@ -492,6 +508,7 @@ else:
         draw_ui(now_time)
 
         if W_LIMIT:
+            glPopMatrix()
             draw_texture(illustration, 0, -rill_yfs, 1, 1, 0, 1, (rill_xfs,0), (1,1,1), clip=((rill_xfs,0),(rill_clip+rill_xfs,0),(rill_clip+rill_xfs,1),(rill_xfs,1)))
             draw_texture(illustration, REAL_WIDTH, -rill_yfs, 1, 1, 0, 1, (1-rill_xfs,0), (1,1,1), clip=((1-rill_clip-rill_xfs,0),(1-rill_xfs,0),(1-rill_xfs,1),(1-rill_clip-rill_xfs,1)))
             draw_rect(0,0,X_OFFSET,REAL_HEIGHT,0,0.7,(0,0),(0.1,0.1,0.1))

@@ -5,12 +5,12 @@ from OpenGL.GLU import gluNewQuadric
 from texture import *
 from rpe_easings import *
 
-def draw_line(x1:float, y1:float, x2:float, y2:float,width:float,color:tuple[float,float,float,float],xoffset=0):
+def draw_line(x1:float, y1:float, x2:float, y2:float,width:float,color:tuple[float,float,float,float]):
     glColor4f(*color)
     glLineWidth(width)
     glBegin(GL_LINES)
-    glVertex2f(x1+xoffset, y1)
-    glVertex2f(x2+xoffset, y2)
+    glVertex2f(x1, y1)
+    glVertex2f(x2, y2)
 
     glEnd()
 
@@ -24,11 +24,11 @@ def draw_quad(a:tuple[float,float],b:tuple[float,float],c:tuple[float,float],d:t
 
     glEnd()
 
-def draw_rect(x, y, w, h, r, a, anchor:tuple[float] | list[float]=(0, 0), color:tuple[float] | list[float]=(1., 1., 1.),xoffset=0):
+def draw_rect(x, y, w, h, r, a, anchor:tuple[float] | list[float]=(0, 0), color:tuple[float] | list[float]=(1., 1., 1.)):
     x_offset, y_offset = -anchor[0]*w, -anchor[1]*h
     glColor(*color, a)
     glPushMatrix()
-    glTranslatef(x+xoffset, y, 0)
+    glTranslatef(x, y, 0)
     glRotate(r, 0., 0., 1.)
     glBegin(GL_QUADS)
     glTexCoord2f(0.,0.)
@@ -42,12 +42,12 @@ def draw_rect(x, y, w, h, r, a, anchor:tuple[float] | list[float]=(0, 0), color:
     glEnd()
     glPopMatrix()
 
-def draw_texture(texture: Texture, x, y, sw, sh, r, a, anchor:tuple[float] | list[float]=(0, 0), color:tuple[float] | list[float]=(1., 1., 1.), clip:tuple[tuple[float]]=((0., 0.), (1., 0.), (1., 1.), (0., 1.)),xoffset=0):
+def draw_texture(texture: Texture, x, y, sw, sh, r, a, anchor:tuple[float] | list[float]=(0, 0), color:tuple[float] | list[float]=(1., 1., 1.), clip:tuple[tuple[float]]=((0., 0.), (1., 0.), (1., 1.), (0., 1.))):
     w, h = texture.width*sw, texture.height*sh
     x_offset, y_offset = -anchor[0]*w, -anchor[1]*h
     glColor(*color, a)
     glPushMatrix()
-    glTranslatef(x+xoffset, y, 0)
+    glTranslatef(x, y, 0)
     glRotate(r, 0., 0., 1.)
     glEnable(GL_TEXTURE_2D)
     glBindTexture(GL_TEXTURE_2D, texture.texture_id)
@@ -65,13 +65,13 @@ def draw_texture(texture: Texture, x, y, sw, sh, r, a, anchor:tuple[float] | lis
     glDisable(GL_TEXTURE_2D)
     glPopMatrix()
 
-def draw_text_texture(texture: Texture, x, y, sw, sh, r, a, anchor:tuple[float] | list[float]=(0, 0), color:tuple[float] | list[float]=(1., 1., 1.),xoffset=0):
+def draw_text_texture(texture: Texture, x, y, sw, sh, r, a, anchor:tuple[float] | list[float]=(0, 0), color:tuple[float] | list[float]=(1., 1., 1.)):
     w, h = texture.width*sw, texture.height*sh
     x_offset, y_offset = -anchor[0]*w, -anchor[1]*h
     y_offset -= (texture.height-75) * sh * (1 - anchor[1])
     glColor(*color, a)
     glPushMatrix()
-    glTranslatef(x+xoffset, y, 0)
+    glTranslatef(x, y, 0)
     glRotate(r, 0., 0., 1.)
     glEnable(GL_TEXTURE_2D)
     glBindTexture(GL_TEXTURE_2D, texture.texture_id)

@@ -163,7 +163,7 @@ class JudgeLine:
                 break
 
     def update_hit(self, time):
-        for i in self.hits:
+        for i in self.hits.copy():
             if i.update(time):
                 self.hits.remove(i)
 

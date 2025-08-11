@@ -149,3 +149,6 @@ def is_intersection(midpoint, angle, width, height):
     x_top = (height - intercept) / slope
     return (0 <= y_left <= height) or (0 <= y_right <= height) or (0 <= x_bottom <= width) or (0 <= x_top <= width)
     # 这是 kbw 写的。关注 B 站 K0nGbawa 谢谢喵
+
+def str2list(s: str) -> list:
+    return [i[1:-1] if i and ((i[0] == "\"" and i[-1] == "\"") or (i[0] == "\'" and i[-1] == "\'")) else i for i in [i[1:] if i[0] == " " else i for i in s[1:-1].split(",")]]

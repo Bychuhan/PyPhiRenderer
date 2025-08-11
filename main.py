@@ -460,21 +460,21 @@ else:
     delta = 1 / fps
     bitrate = int(get_value("bitrate", 15000))
     import hitsound
-    hitsound.summon(chart, music_path, ".\\sound.mp3", format, path)
+    hitsound.summon(chart, music_path, ".\\sound.ogg", format, path)
 
     # TODO
     #import hitsound
     #import soundfile as sf
     #import numpy as np
     #audio, sr = hitsound.gen(music_path, chart, target_sr=48000, format=format, path=path)
-    #sf.write('.\\sound.wav', np.array(audio), sr, subtype="FLOAT")
+    #f.write('.\\sound.wav', np.array(audio), sr, subtype="FLOAT")
 
     if iszip:
         import shutil
         shutil.rmtree(f".\\.temp\\{r}")
     ffmpeg_command = [
         "ffmpeg", "-y", "-f", "rawvideo", "-vcodec", "rawvideo", "-s", f"{REAL_WIDTH}x{REAL_HEIGHT}", "-pix_fmt", "rgb24",
-        "-r", str(fps), "-i", "-", "-i", ".\\sound.mp3", "-c:v", "libx264", "-b:v", f"{bitrate}k", "-pix_fmt", "yuv420p",
+        "-r", str(fps), "-i", "-", "-i", ".\\sound.ogg", "-c:v", "libx264", "-b:v", f"{bitrate}k", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "128k", "-strict", "experimental", "-vf", "vflip", output
     ]
     frame = int(fps * music_length)
@@ -524,8 +524,8 @@ else:
     process.stdin.close()
     process.wait()
 
-    if os.path.exists(".\\sound.mp3"):
-        os.remove(".\\sound.mp3")
+    if os.path.exists(".\\sound.ogg"):
+        os.remove(".\\sound.ogg")
 
     pygame.quit()
     exit()

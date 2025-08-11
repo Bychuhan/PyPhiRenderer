@@ -1,9 +1,19 @@
 import sys, pygame, locale, os
 from json import loads
-from func import *
 pygame.init()
 
-VERSION = '0.0.1.2'
+def get_value(name, default):
+    try:
+        index = sys.argv.index(f"--{name}")
+        return sys.argv[index+1]
+    except ValueError:
+        return default
+
+def get(path):
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
+
+VERSION = '0.0.2'
 SCRAEEN_SCALE = pygame.display.get_desktop_sizes()[0][0] / 1920
 ASPECT_RATIO = [int(i) for i in (get_value("aspectratio", "16:9")).split(":")]
 REAL_WIDTH = int(get_value("width", 1200 * SCRAEEN_SCALE))

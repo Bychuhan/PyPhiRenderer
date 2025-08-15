@@ -3,23 +3,27 @@ import pygame
 from func import *
 from const import *
 import log
+import emoji
 pygame.init()
 
 class Text:
-    def __init__(self, text: str, font: pygame.font.Font, maxwidth = 999999, letter_spacing=0):
+    def __init__(self, text: str, font: pygame.font.Font, maxwidth = 999999, letter_spacing=0, emj=False):
         self.text = None
         self.font = font
         self.texture = None
         self.w = 0
         self.h = 0
         self.letter_spacing = letter_spacing
+        self.emj = emj
         self.change_text(text)
         self.attach_line = None
         self.maxwidth = maxwidth
 
-    def render(self, x, y, sw, sh, r, a, anchor=(0, 0), color=(1, 1, 1), time=0):
+    def render(self, x, y, sw, sh, r, a, anchor=(0, 0), color=(1, 1, 1), time=0, maxwidth=None):
         if self.texture is not None:
             _size = 1
+            if not maxwidth is None:
+                self.maxwidth = maxwidth
             if self.w * sw > self.maxwidth:
                 _size = (self.maxwidth / (self.w * sw))
             if self.attach_line is None:
@@ -37,11 +41,17 @@ class Text:
                 glDeleteTextures(1, [self.texture.texture_id])
             w = -self.letter_spacing
             for char in text:
+                if emoji.emoji_list(char) and self.emj:
+                    w += EMOJI_FONT.size(char)[0]+self.letter_spacing
+                    continue
                 w += self.font.size(char)[0]+self.letter_spacing
             text_img = pygame.Surface((max(0, w), self.font.size(text)[1]), pygame.SRCALPHA)
             x = 0
             for char in text:
-                char_surface = self.font.render(char, True, (255, 255, 255))
+                if emoji.emoji_list(char) and self.emj:
+                    char_surface = EMOJI_FONT.render(char, True, (255, 255, 255))
+                else:
+                    char_surface = self.font.render(char, True, (255, 255, 255))
                 text_img.blit(char_surface, (x, 0))
                 x += char_surface.get_width() + self.letter_spacing
             self.w, self.h = text_img.get_size()

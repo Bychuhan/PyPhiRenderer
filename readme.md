@@ -97,8 +97,8 @@
             - [x] hitsound
             - [ ] zIndex
             - [ ] zIndexHitEffects
-            - [x] tint
-            - [x] tintHitEffects
+            - [x] tint (甚至还转正了，)
+            - [x] tintHitEffects (甚至还转正了，)
         - [x] zOrder
         - [x] rotateWithFather
         - [x] scaleOnNotes

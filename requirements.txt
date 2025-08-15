@@ -9,3 +9,4 @@ Requests==2.32.4
 PyYAML==6.0.2
 tqdm==4.67.1
 numpy==2.3.2
+emoji==2.14.1

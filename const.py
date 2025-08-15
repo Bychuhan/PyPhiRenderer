@@ -46,6 +46,10 @@ RPE_LINE_HEIGHT = WINDOW_HEIGHT * (5 / 900)
 LINE_COLOR_GOOD = (0.6353, 0.9333, 1)
 FONT_SIZE = 75
 FONT = pygame.font.Font(f"{RESOURCE_PATH}\\fonts\\font.ttf", FONT_SIZE)
+try:
+    EMOJI_FONT = pygame.font.SysFont("segoeuiemoji", FONT_SIZE)
+except:
+    EMOJI_FONT = FONT
 TEXT_HEIGHT = WINDOW_HEIGHT * 0.0484#0.0555
 TEXT_SCALE = TEXT_HEIGHT / FONT_SIZE
 if "--render" in sys.argv:
